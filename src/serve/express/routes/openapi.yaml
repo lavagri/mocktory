@@ -1,0 +1,332 @@
+openapi: 3.0.3
+info:
+  title: Mocking Service API
+  description: |
+    ### Mocking Service API is a tool for manipulating 3d party Http API behavior by setting different pattern.
+
+    ## 📃 Glossary
+      - `Feature id` - url-friendly unique identifier of the feature, contains action, resource domain and REST resource path. 
+        Main reference to API call, allowing you to set different patterns. It might contain number in the end to distinguish different calls under same request/flow.
+        Use history routes to find it in specific flow or list all mocks, if default mocks cover this feature.
+
+      - `Pattern` - a way to manipulate 3d party API behavior. 
+        - `MOCK` - return mocked response with `statusCode` and `responseBody` properties.
+        - `PASSTHROUGH` - perform real API call, even override default mocks. Request will be logged in history.
+      
+      - `{{requestBody}}` - template ref for backing original request body of API call into your future mock response.
+      
+      - `init` - property that you can pass along with response body. It follows next structure: { status, statusText, headers }. [Source: Fetch Api > Response().options](https://developer.mozilla.org/en-US/docs/Web/API/Response/Response#options)
+
+    ## 🔍 Common use cases 
+
+      * ### 📌 Mocking 3d party API behavior in specific flow.
+        1. Run manual or automation test flow.
+        2. Retrieve the historical data using `history` routes, observe feature `id` affected in step 1. 
+        3. Identify required feature and mock behaviour pattern using `mocking` routes.
+      
+      * ### 📌 What body I must take to mock API response? There are always few options to get most realistic body.
+        - Search in default mocks list, under `/mocks/list` route. Developers try to keep it up to date and realistic, but it might not always reflect to full response.
+        - Run carefully your flow with real API and check `/history-detailed` route with response body. Note, it will work only:
+          - if server has proper permission/credentials to do it.
+          - if default mock exist, you must override it with `PASSTHROUGH` first.
+        - Navigate to API documentation and find example of response body. 
+        - Ask developer.
+         Remember, you might need to use backing values from request (like `{{requestBody}}`), f.e. if response contains same name as you send in request.
+
+      * ### 📌 Mocking failure scenario's
+        1. Find your feature id and desired failure HTTP status [4xx](https://datatracker.ietf.org/doc/html/rfc7231#section-6.5)-[5xx](https://datatracker.ietf.org/doc/html/rfc7231#section-6.6) (RFC 7231). 
+        2. Same as setting regular mock, you able to pass any body, but in `init` property you should pass `status` from step 1.
+      
+      * ### 📌 Mocking scenario's for specified times only
+        1. Find your feature id. 
+        2. Same as setting regular mock, put `count` property in the pattern object. (see "mocking-count" example)
+        3. Mock will be active for specified count of times, then it will be removed behaviour would rollback to default state.
+
+    ## 🗂️ Sections
+      - `history` - retrospective monitoring of called mocks per request. it might be aggregated by request id or other factor.
+      - `mocking` - manipulating 3d party API behavior by setting different pattern, retrieving current status.
+      - `settings` - change system configuration.
+
+  version: 1.0.0
+servers:
+  - url: /api/mock-service
+
+tags:
+  - name: history
+    description: retrospective monitoring of called mocks per request
+  - name: mocking
+    description: manipulating 3d party API behavior by setting different pattern
+paths:
+  /history:
+    get:
+      tags:
+        - history
+      summary: Get compact historical data (↓ 'date' DESC)
+      description: |
+        ### Historical data sorted from recent to oldest requests (DESC).
+
+        Note: 
+         - requests are grouped by unique request predicate, sorted withing this array by date (DESC).
+         - `order` represents the order of calls in the grouped flow.
+      operationId: getHistory
+      responses:
+        200:
+          description: Successful operation
+    delete:
+      tags:
+        - history
+      summary: Delete all historical data
+      operationId: deleteAllHistory
+      responses:
+        200:
+          description: Successful operation
+
+  /history-detailed:
+    get:
+      tags:
+        - history
+      summary: Get detailed historical data (↓ 'date' DESC)
+      description: |
+        ### Historical data sorted from recent to oldest requests (DESC).
+
+        Note: 
+         - requests are grouped by unique request predicate, sorted withing this array by date (DESC).
+         - `order` represents the order of calls in the grouped flow. 
+         - `response.isMockedResponse` - returns true if during request execution mock was used. When it's `false` - you see real response from 3d party API.
+         - `response.body` - is json representation of response body, or "text" - as fallback, since not all APIs return json.
+         - `[Response too big]` will be returned in `response.body` if size will reach over 200 kb. But you can still download full body in `history/response/:requestId` route
+
+      operationId: getHistoryDetailed
+      responses:
+        200:
+          description: Successful operation
+
+  /history/response/{requestId}:
+    get:
+      tags:
+        - history
+      summary: Download full response body from specific request id
+      description: |
+        ### Download full response body from specific request id. Useful when response body is too big to be displayed in history-detailed route.
+        Everything that inside `body` - is API returned response.
+
+      operationId: getFullResponseBody
+      parameters:
+        - in: path
+          name: requestId
+          description: request id
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Successful operation
+
+  /mocks/list:
+    get:
+      tags:
+        - mocking
+      summary: Get all mocks existing in system
+      description: |
+        ### List of custom "set" and default mocks in corresponding order.
+
+        Note `*` asterisk in some feature id, it means matching any char sequence in this place (like regex).
+
+      operationId: getAllMockExistingInSystem
+      responses:
+        200:
+          description: Successful operation
+
+  /mock/{id}:
+    get:
+      tags:
+        - mocking
+      summary: Check status of specific mock id
+      operationId: getMockStatusById
+      parameters:
+        - in: path
+          name: id
+          description: feature id
+          required: true
+          schema:
+            type: string
+
+      responses:
+        200:
+          description: Successful operation
+    post:
+      tags:
+        - mocking
+      summary: Set mock pattern for specific feature
+      description: |
+        ### Pattern notes: 
+
+        * Common
+            -  you can set any response body, status code, headers - all optional.
+            -  you can use `{{requestBody}}` to back original request body of API call into your future mock response.
+            -  you can use `count` parameter to set desired pattern for specified times only.
+            -  your pattern will override any existing default mock, but it will be automatically removed after specific time or `count` of times (if you set it).
+            -  expiration time mock parameter returns with response.
+
+        * `PASSTHROUGH` pattern 
+            - you will let feature call real API, you can expect positive response only if credentials are set for this api properly.
+            - it will be still logged in history.
+        * `MOCK` pattern
+            - main difference between success and failure mock is `status` code in `init` property.
+      operationId: setMock
+      parameters:
+        - in: path
+          name: id
+          description: feature id
+          required: true
+          schema:
+            type: string
+
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SetMock'
+            examples:
+              passthrough request:
+                $ref: '#/components/examples/passthrough-request'
+              mocking response:
+                $ref: '#/components/examples/mocking-response'
+              mocking failure:
+                $ref: '#/components/examples/mocking-failure'
+              mocking count:
+                $ref: '#/components/examples/mocking-count'
+      responses:
+        200:
+          description: Successful operation
+    delete:
+      tags:
+        - mocking
+      summary: Delete mock pattern for specific feature
+      description: It will remove only user “set” mock, not default. In order to remove affect of default, use can mock feature with PASSTHROUGH
+      operationId: deleteMock
+      parameters:
+        - in: path
+          name: id
+          description: feature id
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Successful operation
+
+  /mocks/reset:
+    put:
+      tags:
+        - mocking
+      summary: Restore features to their default mocking state
+      operationId: restoreDashboard
+
+      responses:
+        200:
+          description: Successful operation
+
+  /settings/off:
+    put:
+      tags:
+        - settings
+      summary: Turn mock service completely off
+      operationId: mockServiceOFF
+
+      responses:
+        200:
+          description: Successful operation
+
+  /settings/on:
+    put:
+      tags:
+        - settings
+      summary: Turn mock service on
+      operationId: mockServiceON
+
+      responses:
+        200:
+          description: Successful operation
+
+  /settings/req-blacklist:
+    get:
+      tags:
+        - settings
+      summary: Get requests blacklists
+      operationId: getRequestBlacklist
+
+      responses:
+        200:
+          description: Successful operation
+    put:
+      tags:
+        - settings
+      summary: Set request blacklist
+      description: Yous must provide whole list, use slash wrap to transform to regex
+      operationId: setRequestBlacklist
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SetBlacklist'
+      responses:
+        200:
+          description: Successful operation
+
+components:
+  schemas:
+    SetBlacklist:
+      description: Set blacklist for feature id
+      type: array
+      items:
+        type: string
+
+    SetMock:
+      type: object
+      properties:
+        pattern:
+          type: string
+        init:
+          type: object
+          properties:
+            status:
+              type: number
+            statusText:
+              type: string
+            headers:
+              type: object
+        count:
+          type: number
+        responseBody:
+          description: Any type property
+      required:
+        - pattern
+        - responseBody
+
+  examples:
+    mocking-response:
+      value:
+        pattern: 'MOCK'
+        init:
+          status: 200
+          statusText: 'OK'
+          headers: {}
+        responseBody: {}
+    mocking-failure:
+      value:
+        pattern: 'MOCK'
+        init:
+          status: 500
+        responseBody: { message: 'Failure message from mock API' }
+    mocking-count:
+      value:
+        pattern: 'MOCK'
+        count: 5
+        init:
+          status: 500
+        responseBody:
+          { message: 'Failure message from mock API (5 times active)' }
+    passthrough-request:
+      value:
+        pattern: 'PASSTHROUGH'

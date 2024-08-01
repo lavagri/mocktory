@@ -1,4 +1,4 @@
-Mocktory (beta)
+# Mocktory (beta)
 
 Mocktory is a simple mocks manager for Node.js applications. It is built on the idea of combining [msw](https://mswjs.io/) interceptors with persistence using Redis.
 

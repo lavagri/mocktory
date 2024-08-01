@@ -13,18 +13,27 @@ jobs:
 
       - uses: actions/setup-node@v3
         with:
+          node-version: 18
           always-auth: true
           registry-url: https://registry.npmjs.org
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9.6.0
 
       - name: Setup Git
         run: |
           git config --local user.name "lavagri"
           git config --local user.email "vlad.lazurenko@gmail.com"
 
-      - run: npm ci
-      - run: npm test
+      - name: Install dependencies
+        run: pnpm install
 
-      - run: npm run release
+      - name: Build
+        run: pnpm build
+
+      - name: Release
+        run: pnpm run release
         env:
           GITHUB_TOKEN: ${{ secrets.GH_RELEASE_TOKEN }}
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}

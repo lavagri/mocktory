@@ -2,7 +2,7 @@ import { Router } from 'express'
 
 import { IMockService } from '~/types'
 
-export const MockingRoutes = (MS: IMockService) => {
+export const MockingRoutes: any = (MS: IMockService) => {
   const router = Router()
 
   router.get('/mock/:id', async (req, res, next) => {

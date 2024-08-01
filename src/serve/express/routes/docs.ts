@@ -9,7 +9,7 @@ import { IMockService } from '~/types'
 const file = fs.readFileSync(path.resolve(__dirname, 'openapi.yaml'), 'utf8')
 const swaggerDocument = YAML.parse(file)
 
-export const DocsRoutes = (MS: IMockService) => {
+export const DocsRoutes: any = (MS: IMockService) => {
   const router = Router()
 
   router.use('/docs', swaggerUi.serve)

@@ -8,6 +8,15 @@ importers:
 
   .:
     dependencies:
+      body-parser:
+        specifier: 1.20.2
+        version: 1.20.2
+      express:
+        specifier: 4.19.2
+        version: 4.19.2
+      glob:
+        specifier: 11.0.0
+        version: 11.0.0
       http-status-codes:
         specifier: 2.3.0
         version: 2.3.0
@@ -36,6 +45,9 @@ importers:
       '@ossjs/release':
         specifier: 0.8.1
         version: 0.8.1
+      '@types/express':
+        specifier: 4.17.21
+        version: 4.17.21
       '@types/swagger-ui-express':
         specifier: 4.1.6
         version: 4.1.6

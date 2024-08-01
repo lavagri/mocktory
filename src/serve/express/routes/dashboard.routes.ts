@@ -3,7 +3,7 @@ import { StatusCodes } from 'http-status-codes'
 
 import { IMockService } from '~/types'
 
-export const DashboardRoutes = (MS: IMockService) => {
+export const DashboardRoutes: any = (MS: IMockService) => {
   const router = Router()
 
   router.get('/history', async (req, res, next) => {

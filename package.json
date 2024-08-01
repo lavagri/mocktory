@@ -1,7 +1,6 @@
 {
   "name": "mocktory",
   "version": "0.0.1",
-  "private": true,
   "license": "MIT",
   "main": "./lib/index.js",
   "module": "./lib/index.mjs",
@@ -56,6 +55,7 @@
     ]
   },
   "files": [
+    "docs",
     "lib",
     "src",
     "LICENSE.md",

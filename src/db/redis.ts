@@ -3,11 +3,11 @@ import { Redis } from 'ioredis'
 import path from 'path'
 
 const getHistoryLua = fs.readFileSync(
-  path.resolve(__dirname, 'get-all-hashes.lua'),
+  path.resolve(__dirname, 'commands/get-all-hashes.lua'),
   'utf8',
 )
 const getDetailedReqHistoryLua = fs.readFileSync(
-  path.resolve(__dirname, 'get-detailed-req-history.lua'),
+  path.resolve(__dirname, 'commands/get-detailed-req-history.lua'),
   'utf8',
 )
 

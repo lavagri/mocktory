@@ -1,20 +1,28 @@
-import { MSRedis } from '~/db/redis'
 import { MSRequest } from '~/ms-request'
 import { bodyJSONParser } from '~/utils/body-json-parser'
 import { config } from '~/const'
 import { bytesToKilobytes } from '~/utils/math'
+import { IMockService } from '~/types'
+import { MSRedis } from '~/db/redis'
 
 export class MSWatcher {
+  private readonly redisInstance: MSRedis
   constructor(
-    private readonly redisInstance: MSRedis,
+    private readonly MS: IMockService,
     private readonly options: { requestAggKey?: () => string } = {},
-  ) {}
+  ) {
+    this.redisInstance = this.MS.getRedisClient()
+  }
 
   private getRequestAggKey() {
     return this.options.requestAggKey?.() || 'unknown'
   }
 
   async saveInHistory(msRequest: MSRequest): Promise<MSRequest> {
+    if (this.MS.isBlackListedFeature(msRequest.getFeatureId())) {
+      return msRequest
+    }
+
     const key = this.getRequestAggKey()
     const composedKey = 'ms:watcher:' + key
     const content = await msRequest.toDefaultTrackableContent()

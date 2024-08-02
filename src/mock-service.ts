@@ -79,6 +79,16 @@ export class MockService implements IMockService {
     return this.reqBlackList.getActiveList()
   }
 
+  isBlackListedFeature(featureId: string): boolean {
+    return this.getReqBlackList().some((rule) => {
+      if (rule instanceof RegExp) {
+        return rule.test(featureId)
+      }
+
+      return rule === featureId
+    })
+  }
+
   async setReqBlackList(
     list: (string | RegExp)[],
   ): Promise<(string | RegExp)[]> {

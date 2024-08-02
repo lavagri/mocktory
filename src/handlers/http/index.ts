@@ -29,7 +29,7 @@ export class MSHttpHandler {
   ) {
     this.handle()
 
-    this.msHttpWatcher = new MSWatcher(this.MS.getRedisClient(), {
+    this.msHttpWatcher = new MSWatcher(this.MS, {
       requestAggKey: this.MS.getInitOptions().requestAggKey,
     })
   }
@@ -115,32 +115,14 @@ export class MSHttpHandler {
   }
 
   private isRequestObservable(msRequest: MSRequest): boolean {
-    const featureId = msRequest.getFeatureId()
     const method = msRequest.getMethod()
 
-    return (
-      this.observableHttpMethods.includes(method) &&
-      !this.isBlackListedFeature(featureId)
-    )
-  }
-
-  private isBlackListedFeature(featureId: string): boolean {
-    return this.MS.getReqBlackList().some((rule) => {
-      if (rule instanceof RegExp) {
-        return rule.test(featureId)
-      }
-
-      return rule === featureId
-    })
+    return this.observableHttpMethods.includes(method)
   }
 
   // TODO: fix returning type
   private async applyMockPattern(msRequest: MSRequest): Promise<any> {
     const featureId = msRequest.getFeatureId()
-
-    if (this.isBlackListedFeature(featureId)) {
-      return passthrough()
-    }
 
     // TODO: invert ifs/ get body only if necessary
     const reqBody = await msRequest.getBody()

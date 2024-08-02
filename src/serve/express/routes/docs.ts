@@ -6,10 +6,7 @@ import swaggerUi, { SwaggerUiOptions } from 'swagger-ui-express'
 
 import { IMockService } from '~/types'
 
-const file = fs.readFileSync(
-  path.resolve(__dirname, '../docs/openapi.yaml'),
-  'utf8',
-)
+const file = fs.readFileSync(path.resolve(__dirname, 'openapi.yaml'), 'utf8')
 const swaggerDocument = YAML.parse(file)
 
 export const DocsRoutes: any = (MS: IMockService) => {

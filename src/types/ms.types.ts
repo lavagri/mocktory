@@ -101,6 +101,7 @@ export interface IMockService {
   serveExpress(): Express
 
   getReqBlackList(): (string | RegExp)[]
+  isBlackListedFeature(featureId: string): boolean
   setReqBlackList(list: (string | RegExp)[]): Promise<(string | RegExp)[]>
 
   close(): Promise<boolean>

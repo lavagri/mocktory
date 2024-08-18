@@ -26,7 +26,7 @@ jobs:
 
       - name: Type check
         run: |
-          pnpm tsc --version
+          pnpm tsc --showConfig
           pnpm type
 
       - name: Lint

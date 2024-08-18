@@ -20,6 +20,8 @@ import { MSBlackListRequestService } from './black-list-request.service'
 
 export class MockService implements IMockService {
   private readonly redis: MSRedis
+  private readonly redisSub: MSRedis
+
   private readonly mswServer: SetupServerApi
   private readonly reqBlackList: MSBlackListRequestService
   private readonly emitter: Emitter<MSEventsMap> = new Emitter<MSEventsMap>()
@@ -35,6 +37,7 @@ export class MockService implements IMockService {
 
   constructor(private readonly initOptions: InitOptions) {
     this.redis = createRedisClient(initOptions.redis)
+    this.redisSub = createRedisClient(this.initOptions.redis)
 
     this.mswServer = setupServer()
 
@@ -98,7 +101,10 @@ export class MockService implements IMockService {
   }
 
   async close() {
-    this.redis.disconnect()
+    await this.off()
+    await this.redis.quit()
+    await this.redisSub.quit()
+
     return true
   }
 
@@ -131,10 +137,8 @@ export class MockService implements IMockService {
   }
 
   private subscribeOnMSEvents() {
-    const redisSub = createRedisClient(this.initOptions.redis)
-
-    redisSub.subscribe(this.msEventChannel)
-    redisSub.on('message', (channel, message) => {
+    this.redisSub.subscribe(this.msEventChannel)
+    this.redisSub.on('message', (channel, message) => {
       if (channel !== this.msEventChannel) {
         return
       }

@@ -46,7 +46,7 @@ export class MSRequest<TBody extends DefaultBodyType = DefaultBodyType> {
     return this.request.method
   }
 
-  async getBody(): Promise<TBody | string> {
+  async getBody(): Promise<TBody | string | undefined> {
     return bodyJSONParser<TBody>(this.request.clone()).then((res) => res.body)
   }
 

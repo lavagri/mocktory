@@ -1,5 +1,5 @@
 import { MSRequest } from '~/ms-request'
-import { bodyJSONParser } from '~/utils/body-json-parser'
+import { bodyJSONParser } from '~/handlers/http/body-json-parser'
 import { config } from '~/const'
 import { bytesToKilobytes } from '~/utils/math'
 import { IMockService } from '~/types'
@@ -45,7 +45,9 @@ export class MSWatcher {
     const composedResKey = 'ms:response:' + msRequest.getRequestId()
     const composedShortResKey = 'ms:response-short:' + msRequest.getRequestId()
 
-    const { body, size } = await bodyJSONParser(responseRaw.clone())
+    const { body, size, type, contentType } = await bodyJSONParser(
+      responseRaw.clone(),
+    )
 
     const msResponseJSON = {
       isMockedResponse: isMockedResponse,
@@ -53,12 +55,17 @@ export class MSWatcher {
       statusText: responseRaw.statusText,
       params: msRequest.getQueryParams(),
       body,
-      size,
+      meta: {
+        type,
+        size,
+        contentType,
+      },
     }
 
     await this.redisInstance.set(composedResKey, JSON.stringify(msResponseJSON))
     await this.redisInstance.expire(composedResKey, config.historyTTL_S)
 
+    // TODO: move to config/settings
     const shortBodyKBThreshold = 200
     const shortBody =
       bytesToKilobytes(size || 0) > shortBodyKBThreshold

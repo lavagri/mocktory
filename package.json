@@ -8,7 +8,7 @@
   "scripts": {
     "clean": "rimraf ./lib",
     "build": "pnpm clean && cross-env NODE_ENV=production tsup-node && pnpm copy-assets",
-    "type": "tsc --noEmit",
+    "type": "tsc --noEmit -p tsconfig.json",
     "copy-assets": "pnpm copy-db-commands && pnpm copy-docs",
     "copy-db-commands": "copyfiles -f src/db/commands/*.lua lib/commands",
     "copy-docs": "copyfiles -f docs/openapi.yaml lib",

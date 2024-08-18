@@ -15,7 +15,7 @@ jobs:
 
       - uses: actions/setup-node@v3
         with:
-          node-version: 18
+          node-version: 18.16.0
 
       - uses: pnpm/action-setup@v4
         with:
@@ -25,7 +25,9 @@ jobs:
         run: pnpm install
 
       - name: Type check
-        run: pnpm type
+        run: |
+          pnpm tsc --version
+          pnpm type
 
       - name: Lint
         run: pnpm lint

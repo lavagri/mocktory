@@ -25,9 +25,7 @@ jobs:
         run: pnpm install
 
       - name: Type check
-        run: |
-          pnpm tsc --showConfig
-          pnpm type
+        run: pnpm type
 
       - name: Lint
         run: pnpm lint

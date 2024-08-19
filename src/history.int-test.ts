@@ -3,17 +3,14 @@ import { randomInt } from 'crypto'
 import { FakeHttpServer } from '../test/utils/fake-http-server'
 import { MockService } from './index'
 import { MSDashboard } from '~/ms-dashboard'
+import { inject } from 'vitest'
 
 const httpServer = FakeHttpServer.createNew()
-
-const redisConfig = globalThis.testcontainers.containers.find(
-  ({ name }) => name === 'redis',
-)!
 
 describe('MockService history', () => {
   const ms = new MockService({
     basePath: '/mock-service',
-    redis: { host: redisConfig.host, port: redisConfig.ports.get(6379)! },
+    redis: inject('redis'),
   })
   const dash: MSDashboard = ms.getDashboard()
 

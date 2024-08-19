@@ -26,5 +26,7 @@ export default defineConfig({
     ...common.test,
     environment: 'testcontainers',
     environmentOptions,
+
+    setupFiles: ['./test/vite.int.global-setup.ts'],
   },
 })

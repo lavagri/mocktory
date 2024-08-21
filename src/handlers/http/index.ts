@@ -4,11 +4,14 @@ import { http as mswHttp, HttpMethods, HttpResponse, passthrough } from 'msw'
 import {
   IMockService,
   MSMockingPattern,
-  MSMockPayloadMocking,
+  MSMockingPayload,
 } from '~/types/ms.types'
 import { MSWatcher } from '~/handlers/http/ms-watcher'
 import { MSRequest } from '~/ms-request'
-import { MSInMemHandlers } from '~/handlers/http/in-mem-handlers'
+import {
+  MSInMemHandler,
+  MSInMemHandlers,
+} from '~/handlers/http/in-mem-handlers'
 import { MSHttpResponse } from '~/handlers/http/response'
 
 export class MSHttpHandler {
@@ -124,102 +127,40 @@ export class MSHttpHandler {
   private async applyMockPattern(msRequest: MSRequest): Promise<any> {
     const featureId = msRequest.getFeatureId()
 
-    // TODO: invert ifs/ get body only if necessary
-    const reqBody = await msRequest.getBody()
-    const reqQueryParams = msRequest.getQueryParams()
-    const reqPathParams = msRequest.getPathParams()
+    const customMockId = this.MS.getFeatureIdManager().search(featureId)
 
-    const composedKeyPattern = `ms:mocking:${featureId}*`
-    const composedCountKeyPattern = `ms:mocking-count:${featureId}*`
-
-    // TODO: better replace with scan?
-    const [keys, countKeys] = await Promise.all([
-      this.redisInstance.keys(composedKeyPattern),
-      this.redisInstance.keys(composedCountKeyPattern),
-    ])
-
-    const mockingCounterRes = countKeys[0]
-      ? await this.redisInstance.decr(countKeys[0])
-      : 0
-
-    if (mockingCounterRes < 0) {
-      await Promise.all(
-        [keys[0], countKeys[0]].map((k) => this.redisInstance.del(k)),
+    if (customMockId) {
+      const isRestrictedWithCounter = await this.redisInstance.get(
+        `ms:mocking-count:${customMockId}`,
       )
-    } else {
-      const mockingBehaviourRaw = keys[0]
-        ? await this.redisInstance.get(keys[0])
-        : null
-      const mockingBehaviour: MSMockPayloadMocking = mockingBehaviourRaw
-        ? JSON.parse(mockingBehaviourRaw)
-        : null
 
-      if (mockingBehaviour) {
-        if (mockingBehaviour.pattern === MSMockingPattern.MOCK) {
-          this.MS.getEmitter().emit('request:match-custom-mock', {
-            id: featureId,
-            msRequest,
-          })
+      if (!isRestrictedWithCounter) {
+        return this.handleCustomMock(customMockId, msRequest)
+      }
 
-          const msRes = new MSHttpResponse(
-            mockingBehaviour.responseBody,
-            (req) =>
-              HttpResponse.json(
-                MSHttpResponse.applyJSONBacking(
-                  mockingBehaviour.responseBody,
-                  req,
-                ),
-                mockingBehaviour.init,
-              ),
-            { init: mockingBehaviour.init },
-          )
+      const countMockDecr = await this.redisInstance.decr(
+        `ms:mocking-count:${customMockId}`,
+      )
 
-          return msRes.respond({
-            body: reqBody,
-            params: reqPathParams,
-            query: reqQueryParams,
-          })
-        }
-
-        if (mockingBehaviour.pattern === MSMockingPattern.PASSTHROUGH) {
-          this.MS.getEmitter().emit('request:match-custom-passthrough', {
-            id: featureId,
-            msRequest,
-          })
-
-          return passthrough()
-        }
+      if (countMockDecr >= 0) {
+        return this.handleCustomMock(customMockId, msRequest)
+      } else {
+        await Promise.all(
+          [
+            `ms:mocking:${customMockId}`,
+            `ms:mocking-count:${customMockId}`,
+          ].map((k) => this.redisInstance.del(k)),
+        )
       }
     }
 
-    // 2. apply default mock patterns if exists
     const matchingReq = MSInMemHandlers.getMatchHandlers(
       msRequest.getURL(),
       msRequest.getMethod(),
     )
 
     if (matchingReq.length) {
-      const matchHandler = matchingReq[0]
-
-      this.MS.getEmitter().emit('request:match-default', {
-        id: featureId,
-        msRequest,
-      })
-
-      // TODO: case when mock set as `undefined` || `null` ?
-      if (!matchHandler.responseOrResolver) {
-        return HttpResponse.json(matchHandler.responseOrResolver)
-      }
-
-      if (typeof matchHandler.responseOrResolver === 'function') {
-        return matchHandler.responseOrResolver({ request: msRequest })
-      }
-
-      return matchHandler.responseOrResolver.respond({
-        body: reqBody,
-        params: reqPathParams,
-        query: reqQueryParams,
-      })
+      return this.handleDefaultMock(matchingReq, msRequest)
     }
 
     this.MS.getEmitter().emit('request:passthrough', {
@@ -228,5 +169,88 @@ export class MSHttpHandler {
     })
 
     return passthrough()
+  }
+
+  private async handleCustomMock(customMockId: string, msRequest: MSRequest) {
+    const featureId = msRequest.getFeatureId()
+
+    const mockRaw = await this.redisInstance.get(`ms:mocking:${customMockId}`)
+
+    const mockingBehaviour: MSMockingPayload = mockRaw
+      ? JSON.parse(mockRaw)
+      : null
+
+    if (!mockingBehaviour) {
+      return
+    }
+
+    if (mockingBehaviour.pattern === MSMockingPattern.PASSTHROUGH) {
+      this.MS.getEmitter().emit('request:match-custom-passthrough', {
+        id: featureId,
+        msRequest,
+      })
+
+      return passthrough()
+    }
+
+    if (mockingBehaviour.pattern === MSMockingPattern.MOCK) {
+      const reqBody = await msRequest.getBody()
+      const reqQueryParams = msRequest.getQueryParams()
+      const reqPathParams = msRequest.getPathParams()
+
+      this.MS.getEmitter().emit('request:match-custom-mock', {
+        id: featureId,
+        msRequest,
+      })
+
+      const msRes = new MSHttpResponse(
+        mockingBehaviour.responseBody,
+        (req) =>
+          HttpResponse.json(
+            MSHttpResponse.applyJSONBacking(mockingBehaviour.responseBody, req),
+            mockingBehaviour.init,
+          ),
+        { init: mockingBehaviour.init },
+      )
+
+      return msRes.respond({
+        body: reqBody,
+        params: reqPathParams,
+        query: reqQueryParams,
+      })
+    }
+  }
+
+  private async handleDefaultMock(
+    matchingHandlers: MSInMemHandler[],
+    msRequest: MSRequest,
+  ) {
+    const featureId = msRequest.getFeatureId()
+
+    const matchHandler = matchingHandlers[0]
+
+    this.MS.getEmitter().emit('request:match-default', {
+      id: featureId,
+      msRequest,
+    })
+
+    // TODO: case when mock set as `undefined` || `null` ?
+    if (!matchHandler.responseOrResolver) {
+      return HttpResponse.json(matchHandler.responseOrResolver)
+    }
+
+    if (typeof matchHandler.responseOrResolver === 'function') {
+      return matchHandler.responseOrResolver({ request: msRequest })
+    }
+
+    const reqBody = await msRequest.getBody()
+    const reqQueryParams = msRequest.getQueryParams()
+    const reqPathParams = msRequest.getPathParams()
+
+    return matchHandler.responseOrResolver.respond({
+      body: reqBody,
+      params: reqPathParams,
+      query: reqQueryParams,
+    })
   }
 }

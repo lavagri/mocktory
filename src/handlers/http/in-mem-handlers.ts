@@ -39,19 +39,19 @@ export class MSInMemHandlers {
     })
   }
 
-  static remove(id: string) {
+  static remove(id: string): void {
     MSInMemHandlers.defaultHandlers = MSInMemHandlers.defaultHandlers.filter(
       (e) => e.id !== id,
     )
   }
 
-  static getMatchHandlers(url: URL, method: string) {
+  static getMatchHandlers(url: URL, method: string): MSInMemHandler[] {
     return MSInMemHandlers.defaultHandlers.filter(
       (e) => matchRequestUrl(url, e.url).matches && e.method === method,
     )
   }
 
-  static getHandlerById(id: string) {
+  static getHandlerById(id: string): MSInMemHandler | null {
     const isPrefixSearch = id.endsWith('*')
     const prefix = id.slice(0, -1)
 

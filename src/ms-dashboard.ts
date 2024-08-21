@@ -13,7 +13,6 @@ import {
   MSTrackableRequestContent,
   MSTrackableRequestContentShort,
 } from '~/types'
-import { MSError } from '~/ms-error'
 import {
   MSInMemHandler,
   MSInMemHandlers,
@@ -28,7 +27,9 @@ import { secToMinHuman } from '~/utils/time'
 export class MSDashboard implements IMSDashboard {
   constructor(
     private readonly MS: IMockService,
+    // TODO: replace redis calls to repo completely
     private readonly redisInstance = MS.getRedisClient(),
+    private readonly repo = MS.getMockRepo(),
   ) {}
 
   getConfigDetailed() {
@@ -228,23 +229,7 @@ export class MSDashboard implements IMSDashboard {
       throw new Error('Mocking service is disabled. Please enable it first.')
     }
 
-    const composedKey = 'ms:mocking:' + id
-    const composedCountKey = 'ms:mocking-count:' + id
-
-    const res = await this.redisInstance.set(composedKey, JSON.stringify(body))
-    // TODO: apply same in other places
-    if (res !== 'OK') {
-      throw new MSError(`Failed to set mock with key ${composedKey}`)
-    }
-
-    if (body.count) {
-      await this.redisInstance.set(composedCountKey, body.count)
-    }
-
-    const mockTTL = config.mockTTL_S
-
-    await this.redisInstance.expire(composedKey, mockTTL)
-    await this.redisInstance.expire(composedCountKey, mockTTL)
+    const { mockTTL } = await this.repo.setMock(id, body)
 
     this.MS.getEmitter().emit('mock:set', { id, body, mockTTL })
 

@@ -11,6 +11,8 @@ import {
 import { MSRedis } from '~/db/redis'
 import { MSHttpResponse } from '~/handlers/http/response'
 import { MSRequest } from '~/ms-request'
+import { MSRepo } from '~/ms-repo'
+import { FeatureIdManagerService } from '~/core/feature-id-manager.service'
 
 export type InitOptions = {
   /**
@@ -60,6 +62,10 @@ export interface IMSDashboard {
   reset(): Promise<void>
 }
 
+export interface IMSRepo {
+  getAllMocksKeys(): Promise<string[]>
+}
+
 export type MSSetMockResponse = { expiration: string; body: MSMockingPayload }
 
 export type MSInMemHandlerStatus = {
@@ -95,8 +101,11 @@ export interface IMockService {
   getMSW(): SetupServerApi
 
   getDashboard(): IMSDashboard
+  getMockRepo(): MSRepo
   getInitOptions(): InitOptions
+  waitUntilReady(): Promise<boolean>
   getEmitter(): Emitter<MSEventsMap>
+  getFeatureIdManager(): FeatureIdManagerService
 
   serveExpress(): Express
 
@@ -157,9 +166,11 @@ type NoPayloadCommandToPayload = {
   [Command in NoPayloadCommands]: never
 }
 
-type PayloadCommands = 'BL-SET'
+type PayloadCommands = 'BL-SET' | 'MOCK-SET' | 'MOCK-DROP'
 type PayloadCommandToPayload = {
   'BL-SET': MSBlSettingsRaw
+  'MOCK-SET': MSMockSetRaw
+  'MOCK-DROP': { id: string }
 }
 
 export type MSEventCommand = NoPayloadCommands | PayloadCommands
@@ -178,4 +189,10 @@ export type MSBlSettings = {
 export type MSBlSettingsRaw = {
   default: (string | { __isRegExp: true; source: string })[]
   active: (string | { __isRegExp: true; source: string })[]
+}
+
+export type MSMockSetRaw = {
+  id: string
+  body: MSMockingPayload
+  mockTTL: number
 }

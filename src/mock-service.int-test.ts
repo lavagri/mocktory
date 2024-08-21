@@ -20,7 +20,7 @@ describe('MockService', () => {
     redis: inject('redis'),
   })
 
-  const dash: MSDashboard = ms.getDashboard()
+  let dash: MSDashboard
 
   const multiTypeBody = {
     nameStr: 'test-name',
@@ -31,11 +31,14 @@ describe('MockService', () => {
 
   beforeAll(async () => {
     await httpServer.listen()
+
+    await ms.waitUntilReady()
+    dash = ms.getDashboard()
   })
 
   afterAll(async () => {
-    await httpServer.close()
     await ms.close()
+    await httpServer.close()
   })
 
   describe('apply MOCK pattern', () => {
@@ -61,7 +64,24 @@ describe('MockService', () => {
       const response = await fetchRes.json()
 
       expect(response).toMatchObject(mockBody.responseBody!)
-    }, 10_000)
+    })
+
+    test('mocking success with reverse pattern matching', async () => {
+      const mockBody: MSMockPayloadMocking<object> = {
+        pattern: MSMockingPattern.MOCK,
+        responseBody: multiTypeBody,
+      }
+
+      const pattern = featureIdGET.slice(0, -5) + '*'
+
+      await dash.setMock(pattern, mockBody)
+
+      const fetchRes = await fetch(url)
+      const response = await fetchRes.json()
+
+      expect(response).toMatchObject(mockBody.responseBody!)
+      await dash.dropMock(pattern)
+    })
 
     test('success response with null', async () => {
       const mockBody: MSMockingPayload = {
@@ -471,7 +491,7 @@ describe('MockService', () => {
 
       expect(getResponse1).toEqual('"Custom Response"')
       expect(getResponse2).toEqual('"Custom Response"')
-      expect(getResponse3).toEqual('Real response')
+      expect(getResponse3).toEqual('"Real response"')
     })
 
     test('failure response count exceed, and then success default applied', async () => {

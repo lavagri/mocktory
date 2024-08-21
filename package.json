@@ -67,7 +67,7 @@
   },
   "lint-staged": {
     "src/**/*.{ts}": [
-      "npm run lint"
+      "pnpm eslint"
     ]
   },
   "files": [

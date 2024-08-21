@@ -2,17 +2,24 @@ import fs from 'fs'
 import { Redis } from 'ioredis'
 import path from 'path'
 
-const getHistoryLua = fs.readFileSync(
-  path.resolve(__dirname, 'commands/get-all-hashes.lua'),
-  'utf8',
-)
-const getDetailedReqHistoryLua = fs.readFileSync(
-  path.resolve(__dirname, 'commands/get-detailed-req-history.lua'),
-  'utf8',
-)
+const readLuaScripts = async (fileNames: string[]) => {
+  return Promise.all(
+    fileNames
+      .map((fileName) => `commands/${fileName}`)
+      .map((filePath) =>
+        fs.promises.readFile(path.resolve(__dirname, filePath), 'utf8'),
+      ),
+  )
+}
 
 export interface MSRedis extends Redis {
-  getAllHashes(cursor: string, pattern: string): Promise<string>
+  getKeysByPattern(cursor: string, pattern: string): Promise<string[]>
+
+  getAllHashes<TData extends object>(
+    cursor: string,
+    pattern: string,
+  ): Promise<Record<string, TData>[]>
+
   getDetailedReqHistory(
     cursor: string,
     hashPattern: string,
@@ -20,17 +27,35 @@ export interface MSRedis extends Redis {
   ): Promise<string>
 }
 
-export const createRedisClient = (opts: {
+export const createRedisClient = async (opts: {
   host: string
   port: number
-}): MSRedis => {
-  const redis = new Redis(opts) as MSRedis
+}): Promise<MSRedis> => {
+  const redis = new Redis(opts)
 
-  redis.defineCommand('getAllHashes', { numberOfKeys: 0, lua: getHistoryLua })
+  await createCommands(redis).catch((err) => {
+    console.error('Failed to create commands', err)
+  })
+
+  return redis as MSRedis
+}
+
+async function createCommands(redis: Redis) {
+  const [getAllHashesLua, getDetailedReqHistoryLua, getKeysByPatternLua] =
+    await readLuaScripts([
+      'get-all-hashes.lua',
+      'get-detailed-req-history.lua',
+      'get-keys-by-pattern.lua',
+    ])
+
+  redis.defineCommand('getAllHashes', { numberOfKeys: 0, lua: getAllHashesLua })
   redis.defineCommand('getDetailedReqHistory', {
     numberOfKeys: 0,
     lua: getDetailedReqHistoryLua,
   })
 
-  return redis
+  redis.defineCommand('getKeysByPattern', {
+    numberOfKeys: 0,
+    lua: getKeysByPatternLua,
+  })
 }

@@ -1,5 +1,5 @@
 import fs from 'fs'
-import { Redis } from 'ioredis'
+import { Redis, RedisOptions } from 'ioredis'
 import path from 'path'
 
 const readLuaScripts = async (fileNames: string[]) => {
@@ -27,10 +27,9 @@ export interface MSRedis extends Redis {
   ): Promise<string>
 }
 
-export const createRedisClient = async (opts: {
-  host: string
-  port: number
-}): Promise<MSRedis> => {
+export const createRedisClient = async (
+  opts: RedisOptions,
+): Promise<MSRedis> => {
   const redis = new Redis(opts)
 
   await createCommands(redis).catch((err) => {

@@ -3,19 +3,21 @@ import { randomInt } from 'crypto'
 import { FakeHttpServer } from '../test/utils/fake-http-server'
 import { MockService } from './index'
 import { MSDashboard } from '~/ms-dashboard'
-import { inject } from 'vitest'
 
 const httpServer = FakeHttpServer.createNew()
 
 describe('MockService history', () => {
   const ms = new MockService({
     basePath: '/mock-service',
-    redis: inject('redis'),
+    redis: globalThis.redis,
   })
-  const dash: MSDashboard = ms.getDashboard()
+  let dash: MSDashboard
 
   beforeAll(async () => {
     await httpServer.listen()
+
+    await ms.waitUntilReady()
+    dash = ms.getDashboard()
   })
 
   afterAll(async () => {

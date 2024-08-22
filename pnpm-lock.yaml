@@ -99,6 +99,9 @@ importers:
       rimraf:
         specifier: 6.0.1
         version: 6.0.1
+      testcontainers:
+        specifier: 10.11.0
+        version: 10.11.0
       tsup:
         specifier: 8.2.3
         version: 8.2.3(@swc/core@1.7.6)(jiti@1.21.6)(postcss@8.4.41)(typescript@5.3.3)(yaml@2.5.0)
@@ -111,11 +114,8 @@ importers:
       vitest:
         specifier: 2.0.5
         version: 2.0.5(@types/node@22.4.0)
-      vitest-environment-testcontainers:
-        specifier: 0.1.0
-        version: 0.1.0(vitest@2.0.5(@types/node@22.4.0))
       vitest-mock-extended:
-        specifier: ^2.0.0
+        specifier: 2.0.0
         version: 2.0.0(typescript@5.3.3)(vitest@2.0.5(@types/node@22.4.0))
 
 packages:
@@ -3309,11 +3309,6 @@ packages:
         optional: true
       terser:
         optional: true
-
-  vitest-environment-testcontainers@0.1.0:
-    resolution: {integrity: sha512-jGdIR7NsAB6N4qx6X9rV0OYgdcASNRvGNUzdUlrIaAO6UTDCFG3XvADOC59r+7E0OMIrwSK2HTOgUlCKbMi7ng==}
-    peerDependencies:
-      vitest: '>=0.30.0'
 
   vitest-mock-extended@2.0.0:
     resolution: {integrity: sha512-iDV40gSKlN5RZRSfpOv5SKTdEeBvu4VMpLNNakDSHMWnUmnlfsEVGXHndWAfUD+nZBR+HDcQw7p/JO5sCWo1VQ==}
@@ -6699,13 +6694,6 @@ snapshots:
     optionalDependencies:
       '@types/node': 22.4.0
       fsevents: 2.3.3
-
-  vitest-environment-testcontainers@0.1.0(vitest@2.0.5(@types/node@22.4.0)):
-    dependencies:
-      testcontainers: 10.11.0
-      vitest: 2.0.5(@types/node@22.4.0)
-    transitivePeerDependencies:
-      - supports-color
 
   vitest-mock-extended@2.0.0(typescript@5.3.3)(vitest@2.0.5(@types/node@22.4.0)):
     dependencies:

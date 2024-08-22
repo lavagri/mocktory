@@ -1,4 +1,4 @@
-import { inject, vitest } from 'vitest'
+import { vitest } from 'vitest'
 import { FakeHttpServer } from '../test/utils/fake-http-server'
 import { MockService } from '~/mock-service'
 import { MSDashboard } from '~/ms-dashboard'
@@ -17,7 +17,7 @@ const httpServer = FakeHttpServer.createNew()
 describe('MockService', () => {
   const ms = new MockService({
     basePath: '/mock-service',
-    redis: inject('redis'),
+    redis: globalThis.redis,
   })
 
   let dash: MSDashboard

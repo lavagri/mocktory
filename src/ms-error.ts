@@ -1,6 +1,7 @@
 export class MSError extends Error {
-  constructor(message: string) {
-    super(message)
-    this.name = 'MSError'
-  }
+  name = 'MSError'
+}
+
+export class MSRepoError extends MSError {
+  name = 'MSRepoError'
 }

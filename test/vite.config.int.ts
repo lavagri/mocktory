@@ -1,5 +1,5 @@
 import { defineConfig } from 'vitest/config'
-import { type EnvironmentOptions } from 'vitest-environment-testcontainers'
+import { type EnvironmentOptions } from './test-containers'
 
 import { useCommon } from './vite.config.base'
 
@@ -24,7 +24,7 @@ export default defineConfig({
   ...common,
   test: {
     ...common.test,
-    environment: 'testcontainers',
+    environment: '../test/test-containers',
     environmentOptions,
   },
 })

@@ -6,19 +6,18 @@ import { MSDashboard } from '~/ms-dashboard'
 
 const httpServer = FakeHttpServer.createNew()
 
-const redisConfig = globalThis.testcontainers.containers.find(
-  ({ name }) => name === 'redis',
-)!
-
 describe('MockService history', () => {
   const ms = new MockService({
     basePath: '/mock-service',
-    redis: { host: redisConfig.host, port: redisConfig.ports.get(6379)! },
+    redis: globalThis.redis,
   })
-  const dash: MSDashboard = ms.getDashboard()
+  let dash: MSDashboard
 
   beforeAll(async () => {
     await httpServer.listen()
+
+    await ms.waitUntilReady()
+    dash = ms.getDashboard()
   })
 
   afterAll(async () => {

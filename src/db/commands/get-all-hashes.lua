@@ -3,6 +3,13 @@ local pattern = ARGV[2]
 
 local finalObject = {}
 
+--
+-- Scans all keys that match the pattern and get each hashes
+--
+-- Complexity: O(N + M)
+-- N is the total number of keys in the database.
+-- M is the number of keys that match the pattern and for which HGETALL is called.
+--
 repeat
     local result = redis.call('SCAN', cursor, 'MATCH', pattern)
     cursor = result[1]

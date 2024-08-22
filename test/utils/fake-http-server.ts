@@ -10,7 +10,11 @@ export class FakeHttpServer {
 
   constructor() {
     this.httpServer = http.createServer(async (req, res) => {
-      res.writeHead(this.expectedStatusCode).end(this.expectedResponse)
+      res
+        .writeHead(this.expectedStatusCode, {
+          'Content-Type': 'application/json',
+        })
+        .end(JSON.stringify(this.expectedResponse))
     })
   }
 

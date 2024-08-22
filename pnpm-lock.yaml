@@ -99,6 +99,9 @@ importers:
       rimraf:
         specifier: 6.0.1
         version: 6.0.1
+      testcontainers:
+        specifier: 10.11.0
+        version: 10.11.0
       tsup:
         specifier: 8.2.3
         version: 8.2.3(@swc/core@1.7.6)(jiti@1.21.6)(postcss@8.4.41)(typescript@5.3.3)(yaml@2.5.0)
@@ -111,9 +114,9 @@ importers:
       vitest:
         specifier: 2.0.5
         version: 2.0.5(@types/node@22.4.0)
-      vitest-environment-testcontainers:
-        specifier: 0.1.0
-        version: 0.1.0(vitest@2.0.5(@types/node@22.4.0))
+      vitest-mock-extended:
+        specifier: 2.0.0
+        version: 2.0.0(typescript@5.3.3)(vitest@2.0.5(@types/node@22.4.0))
 
 packages:
 
@@ -3158,6 +3161,14 @@ packages:
     peerDependencies:
       typescript: '>=4.2.0'
 
+  ts-essentials@10.0.2:
+    resolution: {integrity: sha512-Xwag0TULqriaugXqVdDiGZ5wuZpqABZlpwQ2Ho4GDyiu/R2Xjkp/9+zcFxL7uzeLl/QCPrflnvpVYyS3ouT7Zw==}
+    peerDependencies:
+      typescript: '>=4.5.0'
+    peerDependenciesMeta:
+      typescript:
+        optional: true
+
   ts-interface-checker@0.1.13:
     resolution: {integrity: sha512-Y/arvbn+rrz3JCKl9C4kVNfTfSm2/mEp5FSz5EsZSANGPSlQrpRI5M4PKF+mJnE52jOO90PnPSc3Ur3bTQw0gA==}
 
@@ -3299,10 +3310,11 @@ packages:
       terser:
         optional: true
 
-  vitest-environment-testcontainers@0.1.0:
-    resolution: {integrity: sha512-jGdIR7NsAB6N4qx6X9rV0OYgdcASNRvGNUzdUlrIaAO6UTDCFG3XvADOC59r+7E0OMIrwSK2HTOgUlCKbMi7ng==}
+  vitest-mock-extended@2.0.0:
+    resolution: {integrity: sha512-iDV40gSKlN5RZRSfpOv5SKTdEeBvu4VMpLNNakDSHMWnUmnlfsEVGXHndWAfUD+nZBR+HDcQw7p/JO5sCWo1VQ==}
     peerDependencies:
-      vitest: '>=0.30.0'
+      typescript: 3.x || 4.x || 5.x
+      vitest: '>=2.0.0'
 
   vitest@2.0.5:
     resolution: {integrity: sha512-8GUxONfauuIdeSl5f9GTgVEpg5BTOlplET4WEDaeY2QBiN8wSm68vxN/tb5z405OwppfoCavnwXafiaYBC/xOA==}
@@ -6554,6 +6566,10 @@ snapshots:
     dependencies:
       typescript: 5.3.3
 
+  ts-essentials@10.0.2(typescript@5.3.3):
+    optionalDependencies:
+      typescript: 5.3.3
+
   ts-interface-checker@0.1.13: {}
 
   tslib@2.6.3: {}
@@ -6679,12 +6695,11 @@ snapshots:
       '@types/node': 22.4.0
       fsevents: 2.3.3
 
-  vitest-environment-testcontainers@0.1.0(vitest@2.0.5(@types/node@22.4.0)):
+  vitest-mock-extended@2.0.0(typescript@5.3.3)(vitest@2.0.5(@types/node@22.4.0)):
     dependencies:
-      testcontainers: 10.11.0
+      ts-essentials: 10.0.2(typescript@5.3.3)
+      typescript: 5.3.3
       vitest: 2.0.5(@types/node@22.4.0)
-    transitivePeerDependencies:
-      - supports-color
 
   vitest@2.0.5(@types/node@22.4.0):
     dependencies:

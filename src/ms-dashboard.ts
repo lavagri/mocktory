@@ -109,7 +109,10 @@ export class MSDashboard implements IMSDashboard {
   }
 
   async removeHistory(): Promise<void> {
-    const watchKeys = await this.redisInstance.keys('ms:watcher:*')
+    const watchKeys = await this.redisInstance.getKeysByPattern(
+      '0',
+      'ms:watcher:*',
+    )
 
     if (watchKeys.length > 0) {
       await this.redisInstance.del(...watchKeys)
@@ -123,7 +126,7 @@ export class MSDashboard implements IMSDashboard {
 
     const composedKey = 'ms:mocking:*'
 
-    const keys = await this.redisInstance.keys(composedKey)
+    const keys = await this.redisInstance.getKeysByPattern('0', composedKey)
     const mockingPatternsRaw = await Promise.all(
       keys.map((key: string) => this.redisInstance.get(key)),
     )
@@ -199,7 +202,10 @@ export class MSDashboard implements IMSDashboard {
 
     const composedKey = 'ms:mocking:' + id
 
-    const mockingKeys = await this.redisInstance.keys(composedKey)
+    const mockingKeys = await this.redisInstance.getKeysByPattern(
+      '0',
+      composedKey,
+    )
 
     const mockingRaw = await this.redisInstance.get(mockingKeys[0])
     const mocking: MSMockingPayload | null = mockingRaw
@@ -255,7 +261,7 @@ export class MSDashboard implements IMSDashboard {
 
     const composedKey = 'ms:mocking:*'
 
-    const mockKeys = await this.redisInstance.keys(composedKey)
+    const mockKeys = await this.redisInstance.getKeysByPattern('0', composedKey)
 
     if (!mockKeys || !mockKeys.length) {
       return false
@@ -269,7 +275,7 @@ export class MSDashboard implements IMSDashboard {
     )
 
     // Drop all history and other keys
-    const keys = await this.redisInstance.keys(`ms:*`)
+    const keys = await this.redisInstance.getKeysByPattern('0', `ms:*`)
     if (keys.length > 0) {
       await this.redisInstance.del(...keys)
     }

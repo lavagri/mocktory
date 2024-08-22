@@ -1,3 +1,4 @@
+import { delay } from 'msw'
 import { vitest } from 'vitest'
 
 import { MSInMemHandlers } from '~/core/in-mem-handlers'
@@ -39,6 +40,9 @@ describe('MockService', () => {
   })
 
   afterAll(async () => {
+    // end all async tasks
+    await delay(200)
+
     await ms.close()
     await httpServer.close()
   })

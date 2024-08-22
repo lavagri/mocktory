@@ -1,8 +1,8 @@
+import { Router } from 'express'
 import fs from 'fs'
 import path from 'path'
-import YAML from 'yaml'
-import { Router } from 'express'
 import swaggerUi, { SwaggerUiOptions } from 'swagger-ui-express'
+import YAML from 'yaml'
 
 import { IMockService } from '~/types'
 

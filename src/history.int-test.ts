@@ -1,8 +1,10 @@
-import { delay } from 'msw'
 import { randomInt } from 'crypto'
+import { delay } from 'msw'
+
+import { MSDashboard } from '~/ms-dashboard'
+
 import { FakeHttpServer } from '../test/utils/fake-http-server'
 import { MockService } from './index'
-import { MSDashboard } from '~/ms-dashboard'
 
 const httpServer = FakeHttpServer.createNew()
 

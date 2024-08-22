@@ -1,7 +1,8 @@
-import { FeatureIdManagerService } from '~/core/feature-id-manager.service'
 import { afterAll, beforeAll, describe, expect } from 'vitest'
-import { MSRepo } from '~/ms-repo'
+
+import { FeatureIdManagerService } from '~/core/feature-id-manager.service'
 import { createRedisClient } from '~/db/redis'
+import { MSRepo } from '~/ms-repo'
 
 const client = await createRedisClient(globalThis.redis)
 const FeatureIdManager = new FeatureIdManagerService(new MSRepo(client))

@@ -1,8 +1,8 @@
 import {
-  HttpResponse as MSWHttpResponse,
-  JsonBodyType,
   AsyncResponseResolverReturnType,
   DefaultBodyType,
+  HttpResponse as MSWHttpResponse,
+  JsonBodyType,
   PathParams,
 } from 'msw'
 

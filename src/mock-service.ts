@@ -2,23 +2,24 @@ import { Express } from 'express'
 import { setupServer, SetupServerApi } from 'msw/node'
 import { Emitter } from 'strict-event-emitter'
 
-import { createRedisClient, MSRedis } from './db/redis'
-import { MSDashboard } from './ms-dashboard'
+import { FeatureIdManagerService } from '~/core/feature-id-manager.service'
+import { MSRepo } from '~/ms-repo'
 import {
   IMockService,
   InitOptions,
+  MSEvent,
+  MSEventCommand,
+  MSEventCommandToPayload,
   MSEventsMap,
   MSLifeCycleEventEmitter,
-  MSEvent,
-  MSEventCommandToPayload,
-  MSEventCommand,
 } from '~/types'
+
+import { MSBlackListRequestService } from './black-list-request.service'
+import { createRedisClient, MSRedis } from './db/redis'
+import { MSHttpHandler } from './handlers/http'
+import { MSDashboard } from './ms-dashboard'
 import { MSExpressServe } from './serve/express'
 import { loadMockingFiles } from './utils/load-files'
-import { MSHttpHandler } from './handlers/http'
-import { MSBlackListRequestService } from './black-list-request.service'
-import { MSRepo } from '~/ms-repo'
-import { FeatureIdManagerService } from '~/core/feature-id-manager.service'
 
 export class MockService implements IMockService {
   private readonly initializing: Promise<boolean>

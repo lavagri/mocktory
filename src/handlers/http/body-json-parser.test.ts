@@ -1,5 +1,6 @@
-import * as zlib from 'zlib'
 import { describe, expect } from 'vitest'
+import * as zlib from 'zlib'
+
 import {
   bodyJSONParser,
   ParsingResultType,

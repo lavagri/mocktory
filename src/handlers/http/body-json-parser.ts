@@ -1,6 +1,6 @@
 import { DefaultBodyType } from 'msw'
-import * as zlib from 'zlib'
 import * as stream from 'stream'
+import * as zlib from 'zlib'
 
 import { isFunction } from '~/utils/is'
 

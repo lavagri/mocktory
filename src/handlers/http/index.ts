@@ -1,15 +1,15 @@
-import { SetupServerApi } from 'msw/node'
 import { http as mswHttp, HttpMethods, HttpResponse, passthrough } from 'msw'
+import { SetupServerApi } from 'msw/node'
 
+import { MSInMemHandler, MSInMemHandlers } from '~/core/in-mem-handlers'
+import { MSWatcher } from '~/handlers/http/ms-watcher'
+import { MSHttpResponse } from '~/handlers/http/response'
+import { MSRequest } from '~/ms-request'
 import {
   IMockService,
   MSMockingPattern,
   MSMockingPayload,
 } from '~/types/ms.types'
-import { MSWatcher } from '~/handlers/http/ms-watcher'
-import { MSRequest } from '~/ms-request'
-import { MSInMemHandler, MSInMemHandlers } from '~/core/in-mem-handlers'
-import { MSHttpResponse } from '~/handlers/http/response'
 
 export class MSHttpHandler {
   private readonly msHttpWatcher: MSWatcher

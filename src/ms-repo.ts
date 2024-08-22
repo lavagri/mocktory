@@ -1,7 +1,8 @@
-import { MSRedis } from './db/redis'
-import { IMSRepo, MSMockingPayload } from '~/types'
-import { MSRepoError } from '~/ms-error'
 import { config } from '~/const'
+import { MSRepoError } from '~/ms-error'
+import { IMSRepo, MSMockingPayload } from '~/types'
+
+import { MSRedis } from './db/redis'
 
 export class MSRepo implements IMSRepo {
   private readonly keysPrefix = {

@@ -183,7 +183,9 @@ export class MockService implements IMockService {
         return
       }
 
-      this.handleMSEventCommand(JSON.parse(message))
+      this.handleMSEventCommand(JSON.parse(message)).catch((e) => {
+        console.error('Failed to handle ms event command', e)
+      })
     })
   }
 
@@ -193,7 +195,7 @@ export class MockService implements IMockService {
     await this.redis.publish(this.msEventChannel, JSON.stringify(event))
   }
 
-  private handleMSEventCommand<T extends keyof MSEventCommandToPayload>(
+  private async handleMSEventCommand<T extends keyof MSEventCommandToPayload>(
     event: MSEvent<T>,
   ) {
     switch (event.command) {
@@ -207,10 +209,10 @@ export class MockService implements IMockService {
         this.reqBlackList.syncActiveListFromRaw(event.payload)
         break
       case 'MOCK-SET':
-        this.featureIdManager.add(event.payload.id)
+        await this.featureIdManager.add(event.payload.id)
         break
       case 'MOCK-DROP':
-        this.featureIdManager.remove(event.payload.id)
+        await this.featureIdManager.remove(event.payload.id)
         break
     }
   }

@@ -11,6 +11,7 @@ export const useCommon = ({ include }: BaseViteConfig): UserConfig => ({
     globals: true,
     root: './src/',
     include,
+    clearMocks: true,
   },
   plugins: [swc.vite({ module: { type: 'es6' } })],
   resolve: {

@@ -127,7 +127,7 @@ export class MSHttpHandler {
   private async applyMockPattern(msRequest: MSRequest): Promise<any> {
     const featureId = msRequest.getFeatureId()
 
-    const customMockId = this.MS.getFeatureIdManager().search(featureId)
+    const customMockId = await this.MS.getFeatureIdManager().search(featureId)
 
     if (customMockId) {
       const isRestrictedWithCounter = await this.redisInstance.get(

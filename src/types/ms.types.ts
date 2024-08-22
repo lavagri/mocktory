@@ -62,7 +62,8 @@ export interface IMSDashboard {
   reset(): Promise<void>
 }
 
-export interface IMSRepo {
+export interface IMSRepo<TClient = MSRedis> {
+  client: TClient
   getAllMocksKeys(): Promise<string[]>
 }
 

@@ -1,45 +1,55 @@
-import { separateByPredicate } from '~/utils/array'
 import { IMSRepo } from '~/types'
+
+class FeatureIdSet {
+  constructor(
+    private readonly key: string,
+    private readonly msRepo: IMSRepo,
+  ) {}
+
+  get ids(): Promise<string[]> {
+    return this.msRepo.client.smembers(this.key)
+  }
+
+  async add(value: string) {
+    this.msRepo.client.sadd(this.key, value)
+  }
+
+  async remove(value: string) {
+    this.msRepo.client.srem(this.key, value)
+  }
+
+  async isInSet(value: string): Promise<boolean> {
+    return (await this.msRepo.client.sismember(this.key, value)) === 1
+  }
+}
 
 /**
  * Manages all system non-default feature and pattern IDs.
  * Allows searching in reverse pattern matching.
  */
 export class FeatureIdManagerService {
-  private featureIds: string[] = []
-  private patternIds: string[] = []
+  constructor(
+    private readonly msRepo: IMSRepo,
+    private readonly featureIdSet = new FeatureIdSet('ms:feature-ids', msRepo),
+    private readonly patternIdSet = new FeatureIdSet(
+      'ms:feature-pattern-ids',
+      msRepo,
+    ),
+  ) {}
 
-  constructor(private readonly msRepo: IMSRepo) {
-    this.sync().catch((e) => {
-      console.error('FeatureIdManagerService sync error:', e)
-    })
-  }
-
-  async sync() {
-    const featureOrPatternIds = await this.msRepo.getAllMocksKeys()
-
-    const [patternIds, featureIds] = separateByPredicate(
-      featureOrPatternIds,
-      (e) => e.endsWith('*'),
-    )
-
-    this.featureIds = featureIds
-    this.patternIds = patternIds
-  }
-
-  add(featureId: string) {
+  async add(featureId: string) {
     if (featureId.endsWith('*')) {
-      this.patternIds.push(featureId)
+      await this.patternIdSet.add(featureId)
     } else {
-      this.featureIds.push(featureId)
+      await this.featureIdSet.add(featureId)
     }
   }
 
-  remove(featureId: string) {
+  async remove(featureId: string) {
     if (featureId.endsWith('*')) {
-      this.patternIds = this.patternIds.filter((e) => e !== featureId)
+      await this.patternIdSet.remove(featureId)
     } else {
-      this.featureIds = this.featureIds.filter((e) => e !== featureId)
+      await this.featureIdSet.remove(featureId)
     }
   }
 
@@ -50,14 +60,14 @@ export class FeatureIdManagerService {
    * 1. The perfect featureId match will be returned regardless of the existing patterns.
    * 2. If no perfect match is found, the first and shortest pattern that matches the featureId will be returned.
    */
-  search(featureId: string): string | null {
-    const perfectMatch = this.featureIds.find((e) => e === featureId)
+  async search(featureId: string): Promise<string | null> {
+    const perfectMatch = await this.featureIdSet.isInSet(featureId)
     if (perfectMatch) {
-      return perfectMatch
+      return featureId
     }
 
     return (
-      this.patternIds
+      (await this.patternIdSet.ids)
         .filter((e) => new RegExp(e).test(featureId))
         .sort((a, b) => a.length - b.length)[0] || null
     )

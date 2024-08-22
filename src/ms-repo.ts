@@ -9,7 +9,7 @@ export class MSRepo implements IMSRepo {
     mock_count: 'ms:mocking-count:',
   }
 
-  constructor(private readonly redis: MSRedis) {}
+  constructor(readonly client: MSRedis) {}
 
   /**
    * Set mock for a specific id.
@@ -24,7 +24,7 @@ export class MSRepo implements IMSRepo {
 
     const mockTTL = config.mockTTL_S
 
-    const multi = this.redis.multi()
+    const multi = this.client.multi()
 
     multi.set(composedKey, JSON.stringify(body))
 
@@ -51,7 +51,7 @@ export class MSRepo implements IMSRepo {
    * Returns clean keys with no prefix.
    */
   async getAllMocksKeys(): Promise<string[]> {
-    const keys = await this.redis.getKeysByPattern(
+    const keys = await this.client.getKeysByPattern(
       '0',
       `${this.keysPrefix.mock}*`,
     )
@@ -65,7 +65,7 @@ export class MSRepo implements IMSRepo {
   async getMockById(id: string): Promise<MSMockingPayload> {
     const composedKey = this.keysPrefix.mock + id
 
-    const res = await this.redis.get(composedKey)
+    const res = await this.client.get(composedKey)
 
     return res ? JSON.parse(res) : null
   }

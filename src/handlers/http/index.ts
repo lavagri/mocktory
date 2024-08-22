@@ -8,10 +8,7 @@ import {
 } from '~/types/ms.types'
 import { MSWatcher } from '~/handlers/http/ms-watcher'
 import { MSRequest } from '~/ms-request'
-import {
-  MSInMemHandler,
-  MSInMemHandlers,
-} from '~/handlers/http/in-mem-handlers'
+import { MSInMemHandler, MSInMemHandlers } from '~/core/in-mem-handlers'
 import { MSHttpResponse } from '~/handlers/http/response'
 
 export class MSHttpHandler {

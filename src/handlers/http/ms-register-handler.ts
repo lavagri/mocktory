@@ -14,10 +14,7 @@ import {
   MSHttpResponseResolver,
   RespondDefaultJSONBacking,
 } from '~/types/ms-response.types'
-import {
-  MSInMemHandlerOptions,
-  MSInMemHandlers,
-} from '~/handlers/http/in-mem-handlers'
+import { MSInMemHandlerOptions, MSInMemHandlers } from '~/core/in-mem-handlers'
 import { NoInfer } from 'msw/lib/core/typeUtils'
 
 export type MSHttpRequestHandler = <

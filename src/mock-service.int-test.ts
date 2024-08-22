@@ -9,7 +9,7 @@ import {
   MSMockPayloadMocking,
 } from '~/types'
 import { http } from '~/handlers/http/ms-register-handler'
-import { MSInMemHandlers } from '~/handlers/http/in-mem-handlers'
+import { MSInMemHandlers } from '~/core/in-mem-handlers'
 import { MSRequest } from '~/ms-request'
 
 const httpServer = FakeHttpServer.createNew()

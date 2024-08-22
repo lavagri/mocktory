@@ -13,10 +13,7 @@ import {
   MSTrackableRequestContent,
   MSTrackableRequestContentShort,
 } from '~/types'
-import {
-  MSInMemHandler,
-  MSInMemHandlers,
-} from '~/handlers/http/in-mem-handlers'
+import { MSInMemHandler, MSInMemHandlers } from '~/core/in-mem-handlers'
 import { MSHttpResponse } from '~/handlers/http/response'
 import { config } from '~/const'
 import { secToMinHuman } from '~/utils/time'

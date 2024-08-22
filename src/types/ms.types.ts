@@ -1,4 +1,5 @@
 import { Express } from 'express'
+import { type RedisOptions } from 'ioredis'
 import { JsonBodyType } from 'msw'
 import { SetupServerApi } from 'msw/node'
 import { Readable } from 'stream'
@@ -22,9 +23,9 @@ export type InitOptions = {
   basePath: string
 
   /**
-   * Redis connection options
+   * IORedis connection options
    */
-  redis: { host: string; port: number }
+  redis: RedisOptions
 
   // TODO: add request, params, cookies, headers, etc. in params
   /**

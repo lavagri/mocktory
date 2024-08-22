@@ -24,6 +24,7 @@ export default defineConfig({
   ...common,
   test: {
     ...common.test,
+    hookTimeout: 10_000,
     environment: '../test/test-containers',
     environmentOptions,
   },

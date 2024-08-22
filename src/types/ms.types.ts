@@ -1,18 +1,19 @@
 import { Express } from 'express'
 import { JsonBodyType } from 'msw'
 import { SetupServerApi } from 'msw/node'
-import { Emitter } from 'strict-event-emitter'
 import { Readable } from 'stream'
+import { Emitter } from 'strict-event-emitter'
+
+import { FeatureIdManagerService } from '~/core/feature-id-manager.service'
+import { MSRedis } from '~/db/redis'
+import { MSHttpResponse } from '~/handlers/http/response'
+import { MSRepo } from '~/ms-repo'
+import { MSRequest } from '~/ms-request'
 
 import {
   MSTrackableRequestContent,
   MSTrackableRequestContentShort,
 } from './ms-request.types'
-import { MSRedis } from '~/db/redis'
-import { MSHttpResponse } from '~/handlers/http/response'
-import { MSRequest } from '~/ms-request'
-import { MSRepo } from '~/ms-repo'
-import { FeatureIdManagerService } from '~/core/feature-id-manager.service'
 
 export type InitOptions = {
   /**

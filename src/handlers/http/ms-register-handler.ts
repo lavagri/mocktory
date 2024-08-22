@@ -7,18 +7,15 @@ import {
   Path,
   PathParams,
 } from 'msw'
+import { NoInfer } from 'msw/lib/core/typeUtils'
 
-import { IdResolver } from '~/id-resolver'
+import { MSInMemHandlerOptions, MSInMemHandlers } from '~/core/in-mem-handlers'
 import { MSHttpResponse } from '~/handlers/http/response'
+import { IdResolver } from '~/id-resolver'
 import {
   MSHttpResponseResolver,
   RespondDefaultJSONBacking,
 } from '~/types/ms-response.types'
-import {
-  MSInMemHandlerOptions,
-  MSInMemHandlers,
-} from '~/handlers/http/in-mem-handlers'
-import { NoInfer } from 'msw/lib/core/typeUtils'
 
 export type MSHttpRequestHandler = <
   Params extends PathParams<keyof Params> = PathParams,

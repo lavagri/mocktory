@@ -1,9 +1,9 @@
-import { MSRequest } from '~/ms-request'
-import { bodyJSONParser } from '~/handlers/http/body-json-parser'
 import { config } from '~/const'
-import { bytesToKilobytes } from '~/utils/math'
-import { IMockService } from '~/types'
 import { MSRedis } from '~/db/redis'
+import { bodyJSONParser } from '~/handlers/http/body-json-parser'
+import { MSRequest } from '~/ms-request'
+import { IMockService } from '~/types'
+import { bytesToKilobytes } from '~/utils/math'
 
 export class MSWatcher {
   private readonly redisInstance: MSRedis

@@ -1,7 +1,8 @@
+import { afterAll, beforeAll, describe, expect } from 'vitest'
+
 import { FeatureIdManagerService } from '~/core/feature-id-manager.service'
-import { beforeAll, expect } from 'vitest'
-import { MSRepo } from '~/ms-repo'
 import { createRedisClient } from '~/db/redis'
+import { MSRepo } from '~/ms-repo'
 
 const client = await createRedisClient(globalThis.redis)
 const FeatureIdManager = new FeatureIdManagerService(new MSRepo(client))
@@ -9,6 +10,10 @@ const FeatureIdManager = new FeatureIdManagerService(new MSRepo(client))
 describe('FeatureIdManagerService', () => {
   const smmembersSpy = vi.spyOn(client, 'smembers')
   const sismemberSpy = vi.spyOn(client, 'sismember')
+
+  afterAll(async () => {
+    client.quit()
+  })
 
   describe('search()', () => {
     beforeAll(async () => {
@@ -57,6 +62,19 @@ describe('FeatureIdManagerService', () => {
         'ms:feature-ids',
         'DELETE_github.com.api_v1_repo',
       )
+    })
+  })
+
+  describe('add()', () => {
+    test('should store only unique ids', async () => {
+      const pattern = 'DELETE_github.com.api_v1_repo*'
+
+      await FeatureIdManager.add(pattern)
+      await FeatureIdManager.add(pattern)
+
+      const id = await FeatureIdManager.patternIdSet.ids
+
+      expect(id.filter((e) => e === pattern).length).toBe(1)
     })
   })
 })

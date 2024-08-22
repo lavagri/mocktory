@@ -30,11 +30,8 @@ class FeatureIdSet {
 export class FeatureIdManagerService {
   constructor(
     private readonly msRepo: IMSRepo,
-    private readonly featureIdSet = new FeatureIdSet('ms:feature-ids', msRepo),
-    private readonly patternIdSet = new FeatureIdSet(
-      'ms:feature-pattern-ids',
-      msRepo,
-    ),
+    readonly featureIdSet = new FeatureIdSet('ms:feature-ids', msRepo),
+    readonly patternIdSet = new FeatureIdSet('ms:feature-pattern-ids', msRepo),
   ) {}
 
   async add(featureId: string) {

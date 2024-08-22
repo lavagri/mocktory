@@ -1,6 +1,7 @@
 import { matchRequestUrl } from 'msw'
-import { MSHttpResponseResolver } from '~/types/ms-response.types'
+
 import { MSHttpResponse } from '~/handlers/http/response'
+import { MSHttpResponseResolver } from '~/types/ms-response.types'
 
 export type MSInMemHandler = {
   id: string

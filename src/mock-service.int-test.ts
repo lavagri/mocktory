@@ -1,16 +1,18 @@
 import { vitest } from 'vitest'
-import { FakeHttpServer } from '../test/utils/fake-http-server'
+
+import { MSInMemHandlers } from '~/core/in-mem-handlers'
+import { http } from '~/handlers/http/ms-register-handler'
 import { MockService } from '~/mock-service'
 import { MSDashboard } from '~/ms-dashboard'
+import { MSRequest } from '~/ms-request'
 import {
   HttpResponse,
   MSMockingPattern,
   MSMockingPayload,
   MSMockPayloadMocking,
 } from '~/types'
-import { http } from '~/handlers/http/ms-register-handler'
-import { MSInMemHandlers } from '~/handlers/http/in-mem-handlers'
-import { MSRequest } from '~/ms-request'
+
+import { FakeHttpServer } from '../test/utils/fake-http-server'
 
 const httpServer = FakeHttpServer.createNew()
 

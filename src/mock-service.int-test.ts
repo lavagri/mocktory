@@ -15,8 +15,6 @@ import {
 
 import { FakeHttpServer } from '../test/utils/fake-http-server'
 
-const httpServer = FakeHttpServer.createNew()
-
 describe('MockService', () => {
   const ms = new MockService({
     basePath: '/mock-service',
@@ -33,8 +31,6 @@ describe('MockService', () => {
   }
 
   beforeAll(async () => {
-    await httpServer.listen()
-
     await ms.waitUntilReady()
     dash = ms.getDashboard()
   })
@@ -44,15 +40,14 @@ describe('MockService', () => {
     await delay(200)
 
     await ms.close()
-    await httpServer.close()
   })
 
   describe('apply MOCK pattern', () => {
     const path = '/test-mock-path'
 
-    const url = httpServer.getUrl() + path
-    const featureIdGET = httpServer.getFeatureId(path)
-    const featureIdPOST = httpServer.getFeatureId(path, 'POST')
+    const url = FakeHttpServer.getUrl() + path
+    const featureIdGET = FakeHttpServer.getFeatureId(path)
+    const featureIdPOST = FakeHttpServer.getFeatureId(path, 'POST')
 
     afterEach(async () => {
       await dash.dropMock(featureIdGET)
@@ -202,11 +197,11 @@ describe('MockService', () => {
 
   describe('Default mocking', () => {
     const path = '/test-default-path'
-    const featureIdGET = httpServer.getFeatureId(path)
-    const featureIdPOST = httpServer.getFeatureId(path, 'POST')
+    const featureIdGET = FakeHttpServer.getFeatureId(path)
+    const featureIdPOST = FakeHttpServer.getFeatureId(path, 'POST')
 
-    const url = httpServer.getUrl() + path
-    const api = http.setup(httpServer.getUrl())
+    const url = FakeHttpServer.getUrl() + path
+    const api = http.setup(FakeHttpServer.getUrl())
 
     afterEach(async () => {
       MSInMemHandlers.remove(featureIdGET)
@@ -465,11 +460,11 @@ describe('MockService', () => {
 
   describe('Mocking count', () => {
     const path = '/test-count-path'
-    const featureIdGET = httpServer.getFeatureId(path)
-    const featureIdPOST = httpServer.getFeatureId(path, 'POST')
+    const featureIdGET = FakeHttpServer.getFeatureId(path)
+    const featureIdPOST = FakeHttpServer.getFeatureId(path, 'POST')
 
-    const url = httpServer.getUrl() + path
-    const api = http.setup(httpServer.getUrl())
+    const url = FakeHttpServer.getUrl() + path
+    const api = http.setup(FakeHttpServer.getUrl())
 
     afterEach(async () => {
       MSInMemHandlers.remove(featureIdGET)

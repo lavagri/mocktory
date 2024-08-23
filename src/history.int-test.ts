@@ -6,8 +6,6 @@ import { MSDashboard } from '~/ms-dashboard'
 import { FakeHttpServer } from '../test/utils/fake-http-server'
 import { MockService } from './index'
 
-const httpServer = FakeHttpServer.createNew()
-
 describe('MockService history', () => {
   const ms = new MockService({
     basePath: '/mock-service',
@@ -16,21 +14,18 @@ describe('MockService history', () => {
   let dash: MSDashboard
 
   beforeAll(async () => {
-    await httpServer.listen()
-
     await ms.waitUntilReady()
     dash = ms.getDashboard()
   })
 
   afterAll(async () => {
     await ms.close()
-    await httpServer.close()
   })
 
   describe('regular requests', () => {
     test('it should put it into history and retrieve', async () => {
       const uniquePath = '/history-test-path-' + randomInt(10000)
-      const url = httpServer.getUrl() + uniquePath
+      const url = FakeHttpServer.getUrl() + uniquePath
 
       await fetch(url)
 

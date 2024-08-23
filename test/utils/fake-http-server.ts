@@ -1,9 +1,10 @@
 import http from 'http'
+
 import { IdResolver } from '~/id-resolver'
 
 export class FakeHttpServer {
   private readonly httpServer: http.Server
-  private readonly defaultPort = 8181
+  private static readonly defaultPort = 8181
 
   private readonly expectedStatusCode = 200
   private readonly expectedResponse = 'Real response'
@@ -24,7 +25,7 @@ export class FakeHttpServer {
 
   async listen() {
     return new Promise((resolve) => {
-      this.httpServer.listen(this.defaultPort, () => {
+      this.httpServer.listen(FakeHttpServer.defaultPort, () => {
         resolve(true)
       })
 
@@ -34,12 +35,12 @@ export class FakeHttpServer {
     })
   }
 
-  getUrl() {
+  static getUrl() {
     return `http://localhost:${this.defaultPort}`
   }
 
-  getFeatureId(path: string, method = 'GET') {
-    return IdResolver.resolveFeatureId(this.getUrl(), method, path)
+  static getFeatureId(path: string, method = 'GET') {
+    return IdResolver.resolveFeatureId(FakeHttpServer.getUrl(), method, path)
   }
 
   async close() {

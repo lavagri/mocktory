@@ -1,6 +1,6 @@
 import { defineConfig } from 'vitest/config'
-import { type EnvironmentOptions } from './test-containers'
 
+import { type EnvironmentOptions } from './test-containers'
 import { useCommon } from './vite.config.base'
 
 export const IntTestsGlob = ['**/*.int-test.ts']
@@ -27,5 +27,7 @@ export default defineConfig({
     hookTimeout: 10_000,
     environment: '../test/test-containers',
     environmentOptions,
+
+    globalSetup: ['../test/int-setup.ts'],
   },
 })

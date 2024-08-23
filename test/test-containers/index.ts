@@ -8,7 +8,6 @@ export default <Environment>{
   transformMode: 'ssr',
   async setup(_, options: EnvironmentOptions) {
     if (!options.testcontainers?.containers) {
-      // eslint-disable-next-line @typescript-eslint/no-empty-function
       return { teardown: () => {} }
     }
 
@@ -17,6 +16,7 @@ export default <Environment>{
     Object.defineProperty(globalThis, 'testcontainers', {
       value: {
         containers: containers.map((container) => {
+          // eslint-disable-next-line @typescript-eslint/no-unused-vars
           const { container: _, ...rest } = container
           const result: ContainerInformation = rest
           return result

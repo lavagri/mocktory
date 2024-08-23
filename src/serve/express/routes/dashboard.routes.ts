@@ -1,7 +1,7 @@
 import { Router } from 'express'
 import { StatusCodes } from 'http-status-codes'
 
-import { IMockService } from '~/types'
+import { GetMainHistoryFullOptions, IMockService } from '~/types'
 
 export const DashboardRoutes: any = (MS: IMockService) => {
   const router = Router()
@@ -17,15 +17,22 @@ export const DashboardRoutes: any = (MS: IMockService) => {
     }
   })
 
-  router.get('/history-detailed', async (req, res, next) => {
-    try {
-      const history = await MS.getDashboard().getMainHistoryFull()
-      const config = MS.getDashboard().getConfigDetailed()
-      return res.json({ config, history })
-    } catch (e) {
-      return next(e)
-    }
-  })
+  router.get<unknown, unknown, unknown, GetMainHistoryFullOptions>(
+    '/history-detailed',
+    async (req, res, next) => {
+      try {
+        const queryParams = req.query
+
+        const history = await MS.getDashboard().getMainHistoryFull(queryParams)
+
+        const config = MS.getDashboard().getConfigDetailed()
+
+        return res.json({ config, history })
+      } catch (e) {
+        return next(e)
+      }
+    },
+  )
 
   router.delete('/history', async (req, res, next) => {
     try {

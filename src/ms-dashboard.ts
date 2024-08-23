@@ -5,6 +5,7 @@ import { config } from '~/const'
 import { MSInMemHandler, MSInMemHandlers } from '~/core/in-mem-handlers'
 import { MSHttpResponse } from '~/handlers/http/response'
 import {
+  GetMainHistoryFullOptions,
   IMockService,
   IMSDashboard,
   MSInMemHandlerStatus,
@@ -35,11 +36,17 @@ export class MSDashboard implements IMSDashboard {
     }
   }
 
-  async getMainHistoryFull(): Promise<MSTrackableRequestContent[][]> {
+  async getMainHistoryFull(
+    options: GetMainHistoryFullOptions = {},
+  ): Promise<MSTrackableRequestContent[][]> {
+    const responseBodySizeLimitKB = options.sizeLimit || 100
+
     const recordsRaw = await this.redisInstance.getDetailedReqHistory(
       '0',
       'ms:watcher:*',
       'ms:response-short:',
+      'ms:response-meta:',
+      responseBodySizeLimitKB,
     )
     const records: Record<
       string,

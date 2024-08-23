@@ -49,7 +49,9 @@ export type InitOptions = {
 export interface IMSDashboard {
   getConfigDetailed(): { expiration: string }
 
-  getMainHistoryFull(): Promise<MSTrackableRequestContent[][]>
+  getMainHistoryFull(
+    options?: GetMainHistoryFullOptions,
+  ): Promise<MSTrackableRequestContent[][]>
   getMainHistoryShort(): Promise<MSTrackableRequestContentShort[][]>
   getResponseStream(requestId: string): Promise<Readable>
   removeHistory(): Promise<void>
@@ -61,6 +63,10 @@ export interface IMSDashboard {
   dropMock(id: string): Promise<void>
 
   reset(): Promise<void>
+}
+
+export type GetMainHistoryFullOptions = {
+  sizeLimit?: number
 }
 
 export interface IMSRepo<TClient = MSRedis> {

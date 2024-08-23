@@ -37,6 +37,7 @@ export class MSWatcher {
     return msRequest
   }
 
+  // TODO: rewrite to repo
   async saveResponse(
     msRequest: MSRequest,
     responseRaw: Response,
@@ -44,25 +45,23 @@ export class MSWatcher {
   ) {
     const composedResKey = 'ms:response:' + msRequest.getRequestId()
     const composedShortResKey = 'ms:response-short:' + msRequest.getRequestId()
+    const composedMetaResKey = 'ms:response-meta:' + msRequest.getRequestId()
 
     const { body, size, type, contentType } = await bodyJSONParser(
       responseRaw.clone(),
     )
 
+    const meta = { type, size, contentType }
     const msResponseJSON = {
       isMockedResponse: isMockedResponse,
       status: responseRaw.status,
       statusText: responseRaw.statusText,
       params: msRequest.getQueryParams(),
       body,
-      meta: {
-        type,
-        size,
-        contentType,
-      },
     }
 
     await this.redisInstance.set(composedResKey, JSON.stringify(msResponseJSON))
+    await this.redisInstance.set(composedMetaResKey, JSON.stringify(meta))
     await this.redisInstance.expire(composedResKey, config.historyTTL_S)
 
     // TODO: move to config/settings
@@ -77,5 +76,6 @@ export class MSWatcher {
       JSON.stringify({ ...msResponseJSON, body: shortBody }),
     )
     await this.redisInstance.expire(composedShortResKey, config.historyTTL_S)
+    await this.redisInstance.expire(composedMetaResKey, config.historyTTL_S)
   }
 }

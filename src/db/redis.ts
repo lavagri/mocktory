@@ -24,6 +24,8 @@ export interface MSRedis extends Redis {
     cursor: string,
     hashPattern: string,
     reqPattern: string,
+    metaPattern: string,
+    sizeLimit?: number,
   ): Promise<string>
 }
 

@@ -1,6 +1,8 @@
 local cursor = ARGV[1]
 local pattern = ARGV[2]
 local responsePattern = ARGV[3]
+local responseMetaPattern = ARGV[4]
+local responseSizeLimit = tonumber(ARGV[5]) or 200
 
 local finalObject = {}
 
@@ -13,21 +15,26 @@ repeat
         local values = redis.call('HGETALL', key)
         local keyValues = {}
 
-        -- Convert values into key-value pairs
         for i = 1, #values, 2 do
             local decodedValue = cjson.decode(values[i + 1])
 
             if decodedValue.requestId then
-                decodedValue.response = redis.call('GET', responsePattern .. decodedValue.requestId)
+                local meta = redis.call('GET', responseMetaPattern .. decodedValue.requestId)
+
+                decodedValue.meta = cjson.decode(meta or '{}')
+
+                if decodedValue.meta.size and decodedValue.meta.size > responseSizeLimit then
+                    decodedValue.response = '"[Response is too large]"'
+                else
+                    decodedValue.response = redis.call('GET', responsePattern .. decodedValue.requestId)
+                end
             end
 
             keyValues[values[i]] = decodedValue
         end
 
-        -- Add key-values to final object
         finalObject[key] = keyValues
     end
 until cursor == '0'
 
--- Serialize final object to JSON
 return cjson.encode(finalObject)

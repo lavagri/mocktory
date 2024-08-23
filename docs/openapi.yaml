@@ -97,6 +97,13 @@ paths:
          - `[Response too big]` will be returned in `response.body` if size will reach over 200 kb. But you can still download full body in `history/response/:requestId` route
 
       operationId: getHistoryDetailed
+      parameters:
+        - in: query
+          name: sizeLimit
+          description: limit size(KB) of each response body
+          schema:
+            type: integer
+            default: 100
       responses:
         200:
           description: Successful operation

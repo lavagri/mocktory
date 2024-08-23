@@ -1,5 +1,5 @@
-import { isEqualContent } from '~/utils/array'
 import { IMockService, MSBlSettings, MSBlSettingsRaw } from '~/types'
+import { isEqualContent } from '~/utils/array'
 
 export class MSBlackListRequestService {
   private readonly msSettingsBLKey = 'ms:settings:blacklist'

@@ -2,26 +2,34 @@ import { Express } from 'express'
 import { setupServer, SetupServerApi } from 'msw/node'
 import { Emitter } from 'strict-event-emitter'
 
-import { createRedisClient, MSRedis } from './db/redis'
-import { MSDashboard } from './ms-dashboard'
+import { FeatureIdManagerService } from '~/core/feature-id-manager.service'
+import { MSRepo } from '~/ms-repo'
 import {
   IMockService,
   InitOptions,
+  MSEvent,
+  MSEventCommand,
+  MSEventCommandToPayload,
   MSEventsMap,
   MSLifeCycleEventEmitter,
-  MSEvent,
-  MSEventCommandToPayload,
-  MSEventCommand,
 } from '~/types'
+
+import { MSBlackListRequestService } from './black-list-request.service'
+import { createRedisClient, MSRedis } from './db/redis'
+import { MSHttpHandler } from './handlers/http'
+import { MSDashboard } from './ms-dashboard'
 import { MSExpressServe } from './serve/express'
 import { loadMockingFiles } from './utils/load-files'
-import { MSHttpHandler } from './handlers/http'
-import { MSBlackListRequestService } from './black-list-request.service'
 
 export class MockService implements IMockService {
-  private readonly redis: MSRedis
-  private readonly mswServer: SetupServerApi
-  private readonly reqBlackList: MSBlackListRequestService
+  private readonly initializing: Promise<boolean>
+
+  private redis!: MSRedis
+  private redisSub!: MSRedis
+
+  private mswServer!: SetupServerApi
+  private mockRepo!: MSRepo
+  private reqBlackList!: MSBlackListRequestService
   private readonly emitter: Emitter<MSEventsMap> = new Emitter<MSEventsMap>()
 
   public events: MSLifeCycleEventEmitter<MSEventsMap> =
@@ -30,29 +38,57 @@ export class MockService implements IMockService {
 
   private readonly msEventChannel = 'ms-events'
 
-  private readonly msDashboard: MSDashboard
-  private readonly msHttpHandler: MSHttpHandler
+  private msDashboard!: MSDashboard
+  private msHttpHandler!: MSHttpHandler
+  private featureIdManager!: FeatureIdManagerService
 
   constructor(private readonly initOptions: InitOptions) {
-    this.redis = createRedisClient(initOptions.redis)
+    this.initializing = this.init()
+  }
+
+  private async init() {
+    this.redis = await createRedisClient(this.initOptions.redis)
+    this.redisSub = await createRedisClient(this.initOptions.redis)
 
     this.mswServer = setupServer()
+    this.mockRepo = new MSRepo(this.redis)
 
-    if (initOptions.filesPattern) {
-      loadMockingFiles(initOptions.filesPattern)
+    if (this.initOptions.filesPattern) {
+      loadMockingFiles(this.initOptions.filesPattern)
     }
 
     this.msDashboard = new MSDashboard(this)
     this.msHttpHandler = new MSHttpHandler(this)
     this.reqBlackList = new MSBlackListRequestService(this)
+    this.featureIdManager = new FeatureIdManagerService(this.mockRepo)
 
     this.mswServer.listen({ onUnhandledRequest: 'bypass' })
 
     this.subscribeOnMSEvents()
+
+    this.emitter.on('mock:set', (payload) => {
+      this.sendMSEventCommand({ command: 'MOCK-SET', payload }).catch((e) => {
+        console.error('Failed to send mock set event', e)
+      })
+    })
+
+    this.emitter.on('mock:drop', ({ id }) => {
+      this.sendMSEventCommand({ command: 'MOCK-DROP', payload: { id } }).catch(
+        (e) => {
+          console.error('Failed to send mock drop event', e)
+        },
+      )
+    })
+
+    return true
   }
 
   getInitOptions(): InitOptions {
     return this.initOptions
+  }
+
+  waitUntilReady(): Promise<boolean> {
+    return this.initializing
   }
 
   serveExpress(): Express {
@@ -65,6 +101,14 @@ export class MockService implements IMockService {
 
   getEmitter(): Emitter<MSEventsMap> {
     return this.emitter
+  }
+
+  getFeatureIdManager(): FeatureIdManagerService {
+    return this.featureIdManager
+  }
+
+  getMockRepo(): MSRepo {
+    return this.mockRepo
   }
 
   getRedisClient(): MSRedis {
@@ -98,7 +142,10 @@ export class MockService implements IMockService {
   }
 
   async close() {
-    this.redis.disconnect()
+    await this.off()
+    await this.redis.quit()
+    await this.redisSub.quit()
+
     return true
   }
 
@@ -131,15 +178,15 @@ export class MockService implements IMockService {
   }
 
   private subscribeOnMSEvents() {
-    const redisSub = createRedisClient(this.initOptions.redis)
-
-    redisSub.subscribe(this.msEventChannel)
-    redisSub.on('message', (channel, message) => {
+    this.redisSub.subscribe(this.msEventChannel)
+    this.redisSub.on('message', (channel, message) => {
       if (channel !== this.msEventChannel) {
         return
       }
 
-      this.handleMSEventCommand(JSON.parse(message))
+      this.handleMSEventCommand(JSON.parse(message)).catch((e) => {
+        console.error('Failed to handle ms event command', e)
+      })
     })
   }
 
@@ -149,7 +196,7 @@ export class MockService implements IMockService {
     await this.redis.publish(this.msEventChannel, JSON.stringify(event))
   }
 
-  private handleMSEventCommand<T extends keyof MSEventCommandToPayload>(
+  private async handleMSEventCommand<T extends keyof MSEventCommandToPayload>(
     event: MSEvent<T>,
   ) {
     switch (event.command) {
@@ -161,6 +208,12 @@ export class MockService implements IMockService {
         break
       case 'BL-SET':
         this.reqBlackList.syncActiveListFromRaw(event.payload)
+        break
+      case 'MOCK-SET':
+        await this.featureIdManager.add(event.payload.id)
+        break
+      case 'MOCK-DROP':
+        await this.featureIdManager.remove(event.payload.id)
         break
     }
   }

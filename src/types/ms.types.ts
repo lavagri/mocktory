@@ -1,16 +1,20 @@
 import { Express } from 'express'
+import { type RedisOptions } from 'ioredis'
 import { JsonBodyType } from 'msw'
 import { SetupServerApi } from 'msw/node'
-import { Emitter } from 'strict-event-emitter'
 import { Readable } from 'stream'
+import { Emitter } from 'strict-event-emitter'
+
+import { FeatureIdManagerService } from '~/core/feature-id-manager.service'
+import { MSRedis } from '~/db/redis'
+import { MSHttpResponse } from '~/handlers/http/response'
+import { MSRepo } from '~/ms-repo'
+import { MSRequest } from '~/ms-request'
 
 import {
   MSTrackableRequestContent,
   MSTrackableRequestContentShort,
 } from './ms-request.types'
-import { MSRedis } from '~/db/redis'
-import { MSHttpResponse } from '~/handlers/http/response'
-import { MSRequest } from '~/ms-request'
 
 export type InitOptions = {
   /**
@@ -19,9 +23,9 @@ export type InitOptions = {
   basePath: string
 
   /**
-   * Redis connection options
+   * IORedis connection options
    */
-  redis: { host: string; port: number }
+  redis: RedisOptions
 
   // TODO: add request, params, cookies, headers, etc. in params
   /**
@@ -46,7 +50,9 @@ export type InitOptions = {
 export interface IMSDashboard {
   getConfigDetailed(): { expiration: string }
 
-  getMainHistoryFull(): Promise<MSTrackableRequestContent[][]>
+  getMainHistoryFull(
+    options?: GetMainHistoryFullOptions,
+  ): Promise<MSTrackableRequestContent[][]>
   getMainHistoryShort(): Promise<MSTrackableRequestContentShort[][]>
   getResponseStream(requestId: string): Promise<Readable>
   removeHistory(): Promise<void>
@@ -58,6 +64,15 @@ export interface IMSDashboard {
   dropMock(id: string): Promise<void>
 
   reset(): Promise<void>
+}
+
+export type GetMainHistoryFullOptions = {
+  sizeLimit?: number
+}
+
+export interface IMSRepo<TClient = MSRedis> {
+  client: TClient
+  getAllMocksKeys(): Promise<string[]>
 }
 
 export type MSSetMockResponse = { expiration: string; body: MSMockingPayload }
@@ -95,8 +110,11 @@ export interface IMockService {
   getMSW(): SetupServerApi
 
   getDashboard(): IMSDashboard
+  getMockRepo(): MSRepo
   getInitOptions(): InitOptions
+  waitUntilReady(): Promise<boolean>
   getEmitter(): Emitter<MSEventsMap>
+  getFeatureIdManager(): FeatureIdManagerService
 
   serveExpress(): Express
 
@@ -157,9 +175,11 @@ type NoPayloadCommandToPayload = {
   [Command in NoPayloadCommands]: never
 }
 
-type PayloadCommands = 'BL-SET'
+type PayloadCommands = 'BL-SET' | 'MOCK-SET' | 'MOCK-DROP'
 type PayloadCommandToPayload = {
   'BL-SET': MSBlSettingsRaw
+  'MOCK-SET': MSMockSetRaw
+  'MOCK-DROP': { id: string }
 }
 
 export type MSEventCommand = NoPayloadCommands | PayloadCommands
@@ -178,4 +198,10 @@ export type MSBlSettings = {
 export type MSBlSettingsRaw = {
   default: (string | { __isRegExp: true; source: string })[]
   active: (string | { __isRegExp: true; source: string })[]
+}
+
+export type MSMockSetRaw = {
+  id: string
+  body: MSMockingPayload
+  mockTTL: number
 }

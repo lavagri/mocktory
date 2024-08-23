@@ -1,10 +1,10 @@
-import express, { Express } from 'express'
 import bodyParser from 'body-parser'
+import express, { Express } from 'express'
 
-import { IMockService } from '~/types'
 import { DashboardRoutes } from '~/serve/express/routes/dashboard.routes'
-import { MockingRoutes } from '~/serve/express/routes/mocking.routes'
 import { DocsRoutes } from '~/serve/express/routes/docs'
+import { MockingRoutes } from '~/serve/express/routes/mocking.routes'
+import { IMockService } from '~/types'
 
 export class MSExpressServe<TServe = Express> {
   constructor(private readonly MS: IMockService) {}

@@ -1,5 +1,6 @@
 import { DefaultBodyType, StrictRequest } from 'msw'
-import { bodyJSONParser } from '~/utils/body-json-parser'
+
+import { bodyJSONParser } from '~/handlers/http/body-json-parser'
 import { IdResolver } from '~/id-resolver'
 import { MSTrackableRequestContent } from '~/types/ms-request.types'
 
@@ -46,7 +47,7 @@ export class MSRequest<TBody extends DefaultBodyType = DefaultBodyType> {
     return this.request.method
   }
 
-  async getBody(): Promise<TBody | string> {
+  async getBody(): Promise<TBody | string | undefined> {
     return bodyJSONParser<TBody>(this.request.clone()).then((res) => res.body)
   }
 

@@ -1,12 +1,12 @@
 import { DefaultBodyType } from 'msw'
-import * as zlib from 'zlib'
 import * as stream from 'stream'
+import * as zlib from 'zlib'
 
 import { isFunction } from '~/utils/is'
 
 const isBrotliSupported = isFunction(zlib.createBrotliDecompress)
 
-const nonJSONifiableTypes = [
+const notJSONTypes = [
   /^image\/.*/,
   /^application\/(octet-stream|pdf|zip|x-rar-compressed|msword|vnd\.ms-excel|javascript|x-www-form-urlencoded)$/,
   /^application\/vnd\.openxmlformats-officedocument\.(wordprocessingml\.document|spreadsheetml\.sheet|presentationml\.presentation)$/,
@@ -15,13 +15,42 @@ const nonJSONifiableTypes = [
   /^audio\/mpeg$/,
 ]
 
+type ParseOptions = {
+  sizeLimit?: number
+}
+
+const defaultOptions: Required<ParseOptions> = {
+  sizeLimit: 10 * 1024 * 1024, // 10 MB
+}
+
+export enum ParsingResultType {
+  NOT_JSON = 'NOT_JSON',
+  NO_BODY = 'NO_BODY',
+  TOO_BIG = 'TOO_BIG',
+  HTML = 'HTML',
+  STREAM = 'STREAM',
+  MULTIPART = 'MULTIPART',
+  TEXT = 'TEXT',
+  JSON = 'JSON',
+}
+
+type ParsingResult<TBody extends DefaultBodyType> = {
+  type: ParsingResultType
+  body?: TBody | string
+  contentType?: string
+  size: number | null
+}
+
 export const bodyJSONParser = async <TBody extends DefaultBodyType>(
   input: Request | Response,
-): Promise<{ size: number | null; body: TBody | string }> => {
+  options?: ParseOptions,
+): Promise<ParsingResult<TBody>> => {
+  const { sizeLimit } = { ...defaultOptions, ...(options || {}) }
+
   const isBodyEmpty = input.body === null || input.body === undefined
 
   if (isBodyEmpty) {
-    return { body: '[Empty body]', size: 0 }
+    return { type: ParsingResultType.NO_BODY, size: 0 }
   }
 
   const contentType = input.headers.get('content-type') || ''
@@ -29,34 +58,30 @@ export const bodyJSONParser = async <TBody extends DefaultBodyType>(
   const contentLength = input.headers.get('content-length')
   const sizeFromContentLength = contentLength ? Number(contentLength) : null
 
-  // eslint-disable-next-line @typescript-eslint/no-magic-numbers
-  const contentLengthThreshold10MB = 10 * 1024 * 1024
+  const meta: Pick<ParsingResult<TBody>, 'size' | 'contentType'> = {
+    size: sizeFromContentLength,
+    contentType,
+  }
 
   try {
     if (/^multipart\/form-data/.test(contentType)) {
-      return { body: '[Multipart form data]', size: sizeFromContentLength }
+      return { type: ParsingResultType.MULTIPART, ...meta }
     }
 
     if (/^text\/html/.test(contentType)) {
-      return { body: '[HTML content]', size: sizeFromContentLength }
+      return { type: ParsingResultType.HTML, ...meta }
     }
 
     if (/stream/.test(contentType)) {
-      return { body: '[Stream content]', size: sizeFromContentLength }
+      return { type: ParsingResultType.STREAM, ...meta }
     }
 
-    if (nonJSONifiableTypes.some((type) => type.test(contentType))) {
-      return {
-        body: `[Special content: ${contentType}]`,
-        size: sizeFromContentLength,
-      }
+    if (notJSONTypes.some((type) => type.test(contentType))) {
+      return { type: ParsingResultType.NOT_JSON, ...meta }
     }
 
-    if (
-      sizeFromContentLength &&
-      sizeFromContentLength > contentLengthThreshold10MB
-    ) {
-      return { body: '[Response too big]', size: sizeFromContentLength }
+    if (sizeFromContentLength && sizeFromContentLength > sizeLimit) {
+      return { type: ParsingResultType.TOO_BIG, ...meta }
     }
 
     const streams: (stream.Transform | any)[] = [input.body]
@@ -88,18 +113,25 @@ export const bodyJSONParser = async <TBody extends DefaultBodyType>(
     const bodySize = sizeFromContentLength || bodyRaw.length
 
     if (/^text\/plain/.test(contentType)) {
-      return { body: bodyRaw, size: bodySize }
+      return { type: ParsingResultType.TEXT, body: bodyRaw, ...meta }
     }
 
     try {
-      return { body: JSON.parse(bodyRaw), size: bodySize }
+      return {
+        type: ParsingResultType.JSON,
+        body: JSON.parse(bodyRaw),
+        ...meta,
+        size: bodySize,
+      }
     } catch (e) {
-      return { body: bodyRaw, size: bodySize }
+      return {
+        type: ParsingResultType.NOT_JSON,
+        body: bodyRaw,
+        ...meta,
+        size: bodySize,
+      }
     }
   } catch (e) {
-    return {
-      body: `[Unknown body, unable to parse from ${contentType || 'unknown content type'}]`,
-      size: 0,
-    }
+    return { type: ParsingResultType.NOT_JSON, ...meta }
   }
 }

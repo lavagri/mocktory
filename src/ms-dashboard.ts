@@ -1,7 +1,11 @@
 import { StatusCodes } from 'http-status-codes'
 import { Readable } from 'stream'
 
+import { config } from '~/const'
+import { MSInMemHandler, MSInMemHandlers } from '~/core/in-mem-handlers'
+import { MSHttpResponse } from '~/handlers/http/response'
 import {
+  GetMainHistoryFullOptions,
   IMockService,
   IMSDashboard,
   MSInMemHandlerStatus,
@@ -13,13 +17,6 @@ import {
   MSTrackableRequestContent,
   MSTrackableRequestContentShort,
 } from '~/types'
-import { MSError } from '~/ms-error'
-import {
-  MSInMemHandler,
-  MSInMemHandlers,
-} from '~/handlers/http/in-mem-handlers'
-import { MSHttpResponse } from '~/handlers/http/response'
-import { config } from '~/const'
 import { secToMinHuman } from '~/utils/time'
 
 /**
@@ -28,7 +25,9 @@ import { secToMinHuman } from '~/utils/time'
 export class MSDashboard implements IMSDashboard {
   constructor(
     private readonly MS: IMockService,
+    // TODO: replace redis calls to repo completely
     private readonly redisInstance = MS.getRedisClient(),
+    private readonly repo = MS.getMockRepo(),
   ) {}
 
   getConfigDetailed() {
@@ -37,11 +36,17 @@ export class MSDashboard implements IMSDashboard {
     }
   }
 
-  async getMainHistoryFull(): Promise<MSTrackableRequestContent[][]> {
+  async getMainHistoryFull(
+    options: GetMainHistoryFullOptions = {},
+  ): Promise<MSTrackableRequestContent[][]> {
+    const responseBodySizeLimitKB = options.sizeLimit || 100
+
     const recordsRaw = await this.redisInstance.getDetailedReqHistory(
       '0',
       'ms:watcher:*',
       'ms:response-short:',
+      'ms:response-meta:',
+      responseBodySizeLimitKB,
     )
     const records: Record<
       string,
@@ -111,7 +116,10 @@ export class MSDashboard implements IMSDashboard {
   }
 
   async removeHistory(): Promise<void> {
-    const watchKeys = await this.redisInstance.keys('ms:watcher:*')
+    const watchKeys = await this.redisInstance.getKeysByPattern(
+      '0',
+      'ms:watcher:*',
+    )
 
     if (watchKeys.length > 0) {
       await this.redisInstance.del(...watchKeys)
@@ -125,7 +133,7 @@ export class MSDashboard implements IMSDashboard {
 
     const composedKey = 'ms:mocking:*'
 
-    const keys = await this.redisInstance.keys(composedKey)
+    const keys = await this.redisInstance.getKeysByPattern('0', composedKey)
     const mockingPatternsRaw = await Promise.all(
       keys.map((key: string) => this.redisInstance.get(key)),
     )
@@ -201,7 +209,10 @@ export class MSDashboard implements IMSDashboard {
 
     const composedKey = 'ms:mocking:' + id
 
-    const mockingKeys = await this.redisInstance.keys(composedKey)
+    const mockingKeys = await this.redisInstance.getKeysByPattern(
+      '0',
+      composedKey,
+    )
 
     const mockingRaw = await this.redisInstance.get(mockingKeys[0])
     const mocking: MSMockingPayload | null = mockingRaw
@@ -228,23 +239,7 @@ export class MSDashboard implements IMSDashboard {
       throw new Error('Mocking service is disabled. Please enable it first.')
     }
 
-    const composedKey = 'ms:mocking:' + id
-    const composedCountKey = 'ms:mocking-count:' + id
-
-    const res = await this.redisInstance.set(composedKey, JSON.stringify(body))
-    // TODO: apply same in other places
-    if (res !== 'OK') {
-      throw new MSError(`Failed to set mock with key ${composedKey}`)
-    }
-
-    if (body.count) {
-      await this.redisInstance.set(composedCountKey, body.count)
-    }
-
-    const mockTTL = config.mockTTL_S
-
-    await this.redisInstance.expire(composedKey, mockTTL)
-    await this.redisInstance.expire(composedCountKey, mockTTL)
+    const { mockTTL } = await this.repo.setMock(id, body)
 
     this.MS.getEmitter().emit('mock:set', { id, body, mockTTL })
 
@@ -273,7 +268,7 @@ export class MSDashboard implements IMSDashboard {
 
     const composedKey = 'ms:mocking:*'
 
-    const mockKeys = await this.redisInstance.keys(composedKey)
+    const mockKeys = await this.redisInstance.getKeysByPattern('0', composedKey)
 
     if (!mockKeys || !mockKeys.length) {
       return false
@@ -287,7 +282,7 @@ export class MSDashboard implements IMSDashboard {
     )
 
     // Drop all history and other keys
-    const keys = await this.redisInstance.keys(`ms:*`)
+    const keys = await this.redisInstance.getKeysByPattern('0', `ms:*`)
     if (keys.length > 0) {
       await this.redisInstance.del(...keys)
     }

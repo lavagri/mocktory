@@ -1,9 +1,9 @@
-import { MSRequest } from '~/ms-request'
-import { bodyJSONParser } from '~/utils/body-json-parser'
 import { config } from '~/const'
-import { bytesToKilobytes } from '~/utils/math'
-import { IMockService } from '~/types'
 import { MSRedis } from '~/db/redis'
+import { bodyJSONParser } from '~/handlers/http/body-json-parser'
+import { MSRequest } from '~/ms-request'
+import { IMockService } from '~/types'
+import { bytesToKilobytes } from '~/utils/math'
 
 export class MSWatcher {
   private readonly redisInstance: MSRedis
@@ -37,6 +37,7 @@ export class MSWatcher {
     return msRequest
   }
 
+  // TODO: rewrite to repo
   async saveResponse(
     msRequest: MSRequest,
     responseRaw: Response,
@@ -44,21 +45,26 @@ export class MSWatcher {
   ) {
     const composedResKey = 'ms:response:' + msRequest.getRequestId()
     const composedShortResKey = 'ms:response-short:' + msRequest.getRequestId()
+    const composedMetaResKey = 'ms:response-meta:' + msRequest.getRequestId()
 
-    const { body, size } = await bodyJSONParser(responseRaw.clone())
+    const { body, size, type, contentType } = await bodyJSONParser(
+      responseRaw.clone(),
+    )
 
+    const meta = { type, size, contentType }
     const msResponseJSON = {
       isMockedResponse: isMockedResponse,
       status: responseRaw.status,
       statusText: responseRaw.statusText,
       params: msRequest.getQueryParams(),
       body,
-      size,
     }
 
     await this.redisInstance.set(composedResKey, JSON.stringify(msResponseJSON))
+    await this.redisInstance.set(composedMetaResKey, JSON.stringify(meta))
     await this.redisInstance.expire(composedResKey, config.historyTTL_S)
 
+    // TODO: move to config/settings
     const shortBodyKBThreshold = 200
     const shortBody =
       bytesToKilobytes(size || 0) > shortBodyKBThreshold
@@ -70,5 +76,6 @@ export class MSWatcher {
       JSON.stringify({ ...msResponseJSON, body: shortBody }),
     )
     await this.redisInstance.expire(composedShortResKey, config.historyTTL_S)
+    await this.redisInstance.expire(composedMetaResKey, config.historyTTL_S)
   }
 }

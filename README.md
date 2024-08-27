@@ -121,7 +121,7 @@ Realtime mocks can be set via the API:
 
 ```curl
 curl -X 'POST' \
-  'https://developers-pentest.crazylabs.com/api/mock-service/mock/{feautureId}' \
+  '<your project server url>/api/mock-service/mock/{feautureId}' \
   -H 'accept: */*' \
   -H 'Content-Type: application/json' \
   -d '{

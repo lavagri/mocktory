@@ -19,7 +19,9 @@ export class MSWatcher {
   }
 
   async saveInHistory(msRequest: MSRequest): Promise<MSRequest> {
-    if (this.MS.isBlackListedFeature(msRequest.getFeatureId())) {
+    const featureId = msRequest.getFeatureId()
+
+    if (this.MS.isBlackListedFeature(featureId)) {
       return msRequest
     }
 
@@ -43,9 +45,16 @@ export class MSWatcher {
     responseRaw: Response,
     isMockedResponse: boolean = false,
   ) {
-    const composedResKey = 'ms:response:' + msRequest.getRequestId()
-    const composedShortResKey = 'ms:response-short:' + msRequest.getRequestId()
-    const composedMetaResKey = 'ms:response-meta:' + msRequest.getRequestId()
+    const requestId = msRequest.getRequestId()
+    const featureId = msRequest.getFeatureId()
+
+    if (this.MS.isBlackListedFeature(featureId)) {
+      return
+    }
+
+    const composedResKey = 'ms:response:' + requestId
+    const composedShortResKey = 'ms:response-short:' + requestId
+    const composedMetaResKey = 'ms:response-meta:' + requestId
 
     const { body, size, type, contentType } = await bodyJSONParser(
       responseRaw.clone(),

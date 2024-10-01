@@ -253,10 +253,11 @@ export class MSDashboard implements IMSDashboard {
     }
 
     const composedKey = 'ms:mocking:' + id
+    const isBlackListed = this.MS.isBlackListedFeature(id)
 
     await this.redisInstance.del(composedKey)
 
-    this.MS.getEmitter().emit('mock:drop', { id })
+    this.MS.getEmitter().emit('mock:drop', { id, isBlackListed })
 
     return true
   }

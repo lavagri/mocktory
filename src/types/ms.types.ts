@@ -152,10 +152,10 @@ export type MSMockingPayload = MSMockPayloadMocking | MSMockPayloadPassthrough
 
 export type MSEventsMap = {
   'mock:set': [args: { id: string; body: MSMockingPayload; mockTTL: number }]
-  'mock:drop': [args: { id: string }]
+  'mock:drop': [args: { id: string; isBlackListed: boolean }]
   'mock:drop-all': []
 
-  'request:intercepted': [args: { requestId: string; url: string }]
+  'request:intercepted': [args: { requestId: string; msRequest: MSRequest }]
   'request:match-custom-mock': [args: { id: string; msRequest: MSRequest }]
   'request:match-custom-passthrough': [
     args: { id: string; msRequest: MSRequest },

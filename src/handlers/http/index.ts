@@ -50,7 +50,7 @@ export class MSHttpHandler {
 
           this.MS.getEmitter().emit('request:intercepted', {
             requestId,
-            url: request.url,
+            msRequest,
           })
 
           const msRequestWithWatchMeta =

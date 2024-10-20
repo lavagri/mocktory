@@ -18,7 +18,7 @@
     "pre-commit": "lint-staged",
     "commit-msg": "commitlint",
     "release": "release publish",
-    "test": "pnpm test:unit && pnpm test:int",
+    "test": "pnpm test:unit --silent && pnpm test:int --silent",
     "test:unit": "vitest run --config ./test/vite.config.unit.ts",
     "test:int": "vitest run --config ./test/vite.config.int.ts"
   },

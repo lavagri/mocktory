@@ -10,6 +10,7 @@ describe('MockService history', () => {
   const ms = new MockService({
     basePath: '/mock-service',
     redis: globalThis.redis,
+    useConsoleLogger: true,
   })
   let dash: MSDashboard
 

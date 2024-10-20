@@ -8,7 +8,6 @@ export function loadMockingFiles(pattern: string) {
     try {
       require(path.resolve(file))
     } catch (err) {
-      // eslint-disable-next-line no-console
       console.error(`Error while loading ${file}:`, err)
     }
   })

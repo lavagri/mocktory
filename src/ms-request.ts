@@ -5,12 +5,16 @@ import { IdResolver } from '~/id-resolver'
 import { MSTrackableRequestContent } from '~/types/ms-request.types'
 
 export class MSRequest<TBody extends DefaultBodyType = DefaultBodyType> {
+  featureId!: string
+
   private order: number = 1
 
   constructor(
     private readonly request: StrictRequest<TBody>,
     private readonly requestId: string,
-  ) {}
+  ) {
+    this.featureId = this.getFeatureId()
+  }
 
   getAPIId(): string {
     return IdResolver.resolveAPIId(this.getURLHost())

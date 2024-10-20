@@ -9,8 +9,9 @@ export class MSBlackListRequestService {
   constructor(private readonly MS: IMockService) {
     const optionsBlackList = this.MS.getInitOptions().reqBlacklist
 
-    // eslint-disable-next-line no-console
-    this.renewDefaultReqBlackList(optionsBlackList).catch(console.error)
+    this.renewDefaultReqBlackList(optionsBlackList).catch((err) =>
+      this.MS.logger.error(err),
+    )
   }
 
   getActiveList(): (string | RegExp)[] {

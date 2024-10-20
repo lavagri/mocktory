@@ -1,4 +1,11 @@
-import { http as mswHttp, HttpMethods, HttpResponse, passthrough } from 'msw'
+import {
+  DefaultBodyType,
+  http as mswHttp,
+  HttpMethods,
+  HttpResponse,
+  passthrough,
+  StrictRequest,
+} from 'msw'
 import { SetupServerApi } from 'msw/node'
 
 import { MSInMemHandler, MSInMemHandlers } from '~/core/in-mem-handlers'
@@ -38,28 +45,30 @@ export class MSHttpHandler {
     this.mswServer.use(
       mswHttp.all('*', async ({ request, requestId }) => {
         try {
-          if (!this.MS.isEnabled) {
+          if (!this.MS.isEnabled || !this.isRequestObservable(request)) {
             return passthrough()
           }
 
           const msRequest = new MSRequest(request, requestId)
 
-          if (!this.isRequestObservable(msRequest)) {
-            return passthrough()
+          const isBlackListReq = this.MS.isBlackListedFeature(
+            msRequest.getFeatureId(),
+          )
+
+          if (!isBlackListReq) {
+            this.MS.logger.info('request:intercepted', {
+              requestId,
+              msRequest,
+            })
+
+            this.msHttpWatcher
+              .saveInHistory(msRequest)
+              .catch((err) => this.MS.logger.error(err))
           }
 
-          this.MS.getEmitter().emit('request:intercepted', {
-            requestId,
-            url: request.url,
-          })
-
-          const msRequestWithWatchMeta =
-            await this.msHttpWatcher.saveInHistory(msRequest)
-
-          return await this.applyMockPattern(msRequestWithWatchMeta)
-        } catch (e) {
-          // eslint-disable-next-line no-console
-          console.error('MSHttpHandler: http error', e)
+          return await this.applyMockPattern(msRequest)
+        } catch (err) {
+          this.MS.logger.error(err)
           return passthrough()
         }
       }),
@@ -69,24 +78,24 @@ export class MSHttpHandler {
       'response:mocked',
       async ({ requestId, response, request }) => {
         try {
-          if (!this.MS.isEnabled) {
-            return
+          if (!this.MS.isEnabled || !this.isRequestObservable(request)) {
+            return passthrough()
           }
 
           const msRequest = new MSRequest(request, requestId)
-
-          if (!this.isRequestObservable(msRequest)) {
-            return
-          }
-
-          await this.msHttpWatcher.saveResponse(
-            msRequest,
-            response.clone(),
-            true,
+          const isBlackListReq = this.MS.isBlackListedFeature(
+            msRequest.getFeatureId(),
           )
-        } catch (e) {
-          // eslint-disable-next-line no-console
-          console.error('MSHttpHandler: response:mocked error', e)
+
+          if (!isBlackListReq) {
+            await this.msHttpWatcher.saveResponse(
+              msRequest,
+              response.clone(),
+              true,
+            )
+          }
+        } catch (err) {
+          this.MS.logger.error(err)
         }
       },
     )
@@ -95,27 +104,29 @@ export class MSHttpHandler {
       'response:bypass',
       async ({ requestId, response, request }) => {
         try {
-          if (!this.MS.isEnabled) {
-            return
+          if (!this.MS.isEnabled || !this.isRequestObservable(request)) {
+            return passthrough()
           }
 
           const msRequest = new MSRequest(request, requestId)
+          const isBlackListReq = this.MS.isBlackListedFeature(
+            msRequest.getFeatureId(),
+          )
 
-          if (!this.isRequestObservable(msRequest)) {
-            return
+          if (!isBlackListReq) {
+            await this.msHttpWatcher.saveResponse(msRequest, response.clone())
           }
-
-          await this.msHttpWatcher.saveResponse(msRequest, response.clone())
-        } catch (e) {
-          // eslint-disable-next-line no-console
-          console.error('MSHttpHandler: response:bypass error', e)
+        } catch (err) {
+          this.MS.logger.error(err)
         }
       },
     )
   }
 
-  private isRequestObservable(msRequest: MSRequest): boolean {
-    const method = msRequest.getMethod()
+  private isRequestObservable(
+    request: StrictRequest<DefaultBodyType>,
+  ): boolean {
+    const method = request.method
 
     return this.observableHttpMethods.includes(method)
   }
@@ -123,6 +134,7 @@ export class MSHttpHandler {
   // TODO: fix returning type
   private async applyMockPattern(msRequest: MSRequest): Promise<any> {
     const featureId = msRequest.getFeatureId()
+    const isBlackListReq = this.MS.isBlackListedFeature(featureId)
 
     const customMockId = await this.MS.getFeatureIdManager().search(featureId)
 
@@ -160,16 +172,19 @@ export class MSHttpHandler {
       return this.handleDefaultMock(matchingReq, msRequest)
     }
 
-    this.MS.getEmitter().emit('request:passthrough', {
-      id: featureId,
-      msRequest,
-    })
+    if (!isBlackListReq) {
+      this.MS.logger.info('request:passthrough', {
+        id: featureId,
+        msRequest,
+      })
+    }
 
     return passthrough()
   }
 
   private async handleCustomMock(customMockId: string, msRequest: MSRequest) {
     const featureId = msRequest.getFeatureId()
+    const isBlackListReq = this.MS.isBlackListedFeature(featureId)
 
     const mockRaw = await this.redisInstance.get(`ms:mocking:${customMockId}`)
 
@@ -182,10 +197,12 @@ export class MSHttpHandler {
     }
 
     if (mockingBehaviour.pattern === MSMockingPattern.PASSTHROUGH) {
-      this.MS.getEmitter().emit('request:match-custom-passthrough', {
-        id: featureId,
-        msRequest,
-      })
+      if (!isBlackListReq) {
+        this.MS.logger.info('request:match-custom-passthrough', {
+          id: featureId,
+          msRequest,
+        })
+      }
 
       return passthrough()
     }
@@ -195,10 +212,12 @@ export class MSHttpHandler {
       const reqQueryParams = msRequest.getQueryParams()
       const reqPathParams = msRequest.getPathParams()
 
-      this.MS.getEmitter().emit('request:match-custom-mock', {
-        id: featureId,
-        msRequest,
-      })
+      if (!isBlackListReq) {
+        this.MS.logger.info('request:match-custom-mock', {
+          id: featureId,
+          msRequest,
+        })
+      }
 
       const msRes = new MSHttpResponse(
         mockingBehaviour.responseBody,
@@ -223,13 +242,15 @@ export class MSHttpHandler {
     msRequest: MSRequest,
   ) {
     const featureId = msRequest.getFeatureId()
-
+    const isBlackListReq = this.MS.isBlackListedFeature(featureId)
     const matchHandler = matchingHandlers[0]
 
-    this.MS.getEmitter().emit('request:match-default', {
-      id: featureId,
-      msRequest,
-    })
+    if (!isBlackListReq) {
+      this.MS.logger.info('request:match-default', {
+        id: featureId,
+        msRequest,
+      })
+    }
 
     // TODO: case when mock set as `undefined` || `null` ?
     if (!matchHandler.responseOrResolver) {

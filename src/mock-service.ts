@@ -3,6 +3,7 @@ import { setupServer, SetupServerApi } from 'msw/node'
 import { Emitter } from 'strict-event-emitter'
 
 import { FeatureIdManagerService } from '~/core/feature-id-manager.service'
+import { MSConsoleLogger, MSEventLogger, MSLogger } from '~/ms-logger'
 import { MSRepo } from '~/ms-repo'
 import {
   IMockService,
@@ -22,6 +23,8 @@ import { MSExpressServe } from './serve/express'
 import { loadMockingFiles } from './utils/load-files'
 
 export class MockService implements IMockService {
+  public logger!: MSLogger
+
   private readonly initializing: Promise<boolean>
 
   private redis!: MSRedis
@@ -51,6 +54,10 @@ export class MockService implements IMockService {
     this.redisSub = await createRedisClient(this.initOptions.redis)
 
     this.mswServer = setupServer()
+    this.logger = this.initOptions.useConsoleLogger
+      ? new MSConsoleLogger()
+      : new MSEventLogger(this.emitter)
+
     this.mockRepo = new MSRepo(this.redis)
 
     if (this.initOptions.filesPattern) {
@@ -65,20 +72,6 @@ export class MockService implements IMockService {
     this.mswServer.listen({ onUnhandledRequest: 'bypass' })
 
     this.subscribeOnMSEvents()
-
-    this.emitter.on('mock:set', (payload) => {
-      this.sendMSEventCommand({ command: 'MOCK-SET', payload }).catch((e) => {
-        console.error('Failed to send mock set event', e)
-      })
-    })
-
-    this.emitter.on('mock:drop', ({ id }) => {
-      this.sendMSEventCommand({ command: 'MOCK-DROP', payload: { id } }).catch(
-        (e) => {
-          console.error('Failed to send mock drop event', e)
-        },
-      )
-    })
 
     return true
   }
@@ -184,8 +177,8 @@ export class MockService implements IMockService {
         return
       }
 
-      this.handleMSEventCommand(JSON.parse(message)).catch((e) => {
-        console.error('Failed to handle ms event command', e)
+      this.handleMSEventCommand(JSON.parse(message)).catch((err) => {
+        this.logger.error(err)
       })
     })
   }
@@ -208,12 +201,6 @@ export class MockService implements IMockService {
         break
       case 'BL-SET':
         this.reqBlackList.syncActiveListFromRaw(event.payload)
-        break
-      case 'MOCK-SET':
-        await this.featureIdManager.add(event.payload.id)
-        break
-      case 'MOCK-DROP':
-        await this.featureIdManager.remove(event.payload.id)
         break
     }
   }

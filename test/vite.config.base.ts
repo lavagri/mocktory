@@ -1,6 +1,6 @@
+import path from 'path'
 import swc from 'unplugin-swc'
 import { UserConfig } from 'vitest/config'
-import path from 'path'
 
 type BaseViteConfig = {
   include: string[]

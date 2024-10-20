@@ -19,12 +19,6 @@ export class MSWatcher {
   }
 
   async saveInHistory(msRequest: MSRequest): Promise<MSRequest> {
-    const featureId = msRequest.getFeatureId()
-
-    if (this.MS.isBlackListedFeature(featureId)) {
-      return msRequest
-    }
-
     const key = this.getRequestAggKey()
     const composedKey = 'ms:watcher:' + key
     const content = await msRequest.toDefaultTrackableContent()
@@ -46,11 +40,6 @@ export class MSWatcher {
     isMockedResponse: boolean = false,
   ) {
     const requestId = msRequest.getRequestId()
-    const featureId = msRequest.getFeatureId()
-
-    if (this.MS.isBlackListedFeature(featureId)) {
-      return
-    }
 
     const composedResKey = 'ms:response:' + requestId
     const composedShortResKey = 'ms:response-short:' + requestId

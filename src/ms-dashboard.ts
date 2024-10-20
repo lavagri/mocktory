@@ -240,6 +240,7 @@ export class MSDashboard implements IMSDashboard {
     }
 
     const { mockTTL } = await this.repo.setMock(id, body)
+    await this.MS.getFeatureIdManager().add(id)
 
     this.MS.logger.info('mock:set', { id, body, mockTTL })
 
@@ -256,6 +257,7 @@ export class MSDashboard implements IMSDashboard {
     const isBlackListed = this.MS.isBlackListedFeature(id)
 
     await this.redisInstance.del(composedKey)
+    await this.MS.getFeatureIdManager().remove(id)
 
     this.MS.logger.info('mock:drop', { id, isBlackListed })
 

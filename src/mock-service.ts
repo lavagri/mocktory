@@ -73,20 +73,6 @@ export class MockService implements IMockService {
 
     this.subscribeOnMSEvents()
 
-    this.emitter.on('mock:set', (payload) => {
-      this.sendMSEventCommand({ command: 'MOCK-SET', payload }).catch((err) => {
-        this.logger.error(err)
-      })
-    })
-
-    this.emitter.on('mock:drop', ({ id }) => {
-      this.sendMSEventCommand({ command: 'MOCK-DROP', payload: { id } }).catch(
-        (err) => {
-          this.logger.error(err)
-        },
-      )
-    })
-
     return true
   }
 
@@ -215,12 +201,6 @@ export class MockService implements IMockService {
         break
       case 'BL-SET':
         this.reqBlackList.syncActiveListFromRaw(event.payload)
-        break
-      case 'MOCK-SET':
-        await this.featureIdManager.add(event.payload.id)
-        break
-      case 'MOCK-DROP':
-        await this.featureIdManager.remove(event.payload.id)
         break
     }
   }

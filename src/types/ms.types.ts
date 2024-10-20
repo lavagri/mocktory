@@ -163,7 +163,7 @@ export type MSEventsMap = {
   'request:match-default': [args: { id: string; msRequest: MSRequest }]
   'request:passthrough': [args: { id: string; msRequest: MSRequest }]
 
-  error: [Error]
+  error: [Error | unknown]
 }
 
 export type MSLifeCycleEventEmitter<

@@ -26,6 +26,7 @@ export class MSHttpHandler {
     private readonly MS: IMockService,
     private readonly mswServer: SetupServerApi = MS.getMSW(),
     private readonly redisInstance = MS.getRedisClient(),
+    private readonly emitter = MS.getEmitter(),
   ) {
     this.handle()
 
@@ -48,18 +49,18 @@ export class MSHttpHandler {
             return passthrough()
           }
 
-          this.MS.getEmitter().emit('request:intercepted', {
+          this.emitter.emit('request:intercepted', {
             requestId,
             msRequest,
           })
 
-          const msRequestWithWatchMeta =
-            await this.msHttpWatcher.saveInHistory(msRequest)
+          this.msHttpWatcher
+            .saveInHistory(msRequest)
+            .catch((e) => this.emitter.emit('error', e))
 
-          return await this.applyMockPattern(msRequestWithWatchMeta)
-        } catch (e) {
-          // eslint-disable-next-line no-console
-          console.error('MSHttpHandler: http error', e)
+          return await this.applyMockPattern(msRequest)
+        } catch (err) {
+          this.emitter.emit('error', err)
           return passthrough()
         }
       }),
@@ -84,9 +85,8 @@ export class MSHttpHandler {
             response.clone(),
             true,
           )
-        } catch (e) {
-          // eslint-disable-next-line no-console
-          console.error('MSHttpHandler: response:mocked error', e)
+        } catch (err) {
+          this.emitter.emit('error', err)
         }
       },
     )
@@ -106,9 +106,8 @@ export class MSHttpHandler {
           }
 
           await this.msHttpWatcher.saveResponse(msRequest, response.clone())
-        } catch (e) {
-          // eslint-disable-next-line no-console
-          console.error('MSHttpHandler: response:bypass error', e)
+        } catch (err) {
+          this.emitter.emit('error', err)
         }
       },
     )
@@ -160,7 +159,7 @@ export class MSHttpHandler {
       return this.handleDefaultMock(matchingReq, msRequest)
     }
 
-    this.MS.getEmitter().emit('request:passthrough', {
+    this.emitter.emit('request:passthrough', {
       id: featureId,
       msRequest,
     })
@@ -182,7 +181,7 @@ export class MSHttpHandler {
     }
 
     if (mockingBehaviour.pattern === MSMockingPattern.PASSTHROUGH) {
-      this.MS.getEmitter().emit('request:match-custom-passthrough', {
+      this.emitter.emit('request:match-custom-passthrough', {
         id: featureId,
         msRequest,
       })
@@ -195,7 +194,7 @@ export class MSHttpHandler {
       const reqQueryParams = msRequest.getQueryParams()
       const reqPathParams = msRequest.getPathParams()
 
-      this.MS.getEmitter().emit('request:match-custom-mock', {
+      this.emitter.emit('request:match-custom-mock', {
         id: featureId,
         msRequest,
       })
@@ -226,7 +225,7 @@ export class MSHttpHandler {
 
     const matchHandler = matchingHandlers[0]
 
-    this.MS.getEmitter().emit('request:match-default', {
+    this.emitter.emit('request:match-default', {
       id: featureId,
       msRequest,
     })

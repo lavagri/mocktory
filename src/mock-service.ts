@@ -68,14 +68,14 @@ export class MockService implements IMockService {
 
     this.emitter.on('mock:set', (payload) => {
       this.sendMSEventCommand({ command: 'MOCK-SET', payload }).catch((e) => {
-        console.error('Failed to send mock set event', e)
+        this.emitter.emit('error', e)
       })
     })
 
     this.emitter.on('mock:drop', ({ id }) => {
       this.sendMSEventCommand({ command: 'MOCK-DROP', payload: { id } }).catch(
         (e) => {
-          console.error('Failed to send mock drop event', e)
+          this.emitter.emit('error', e)
         },
       )
     })
@@ -185,7 +185,7 @@ export class MockService implements IMockService {
       }
 
       this.handleMSEventCommand(JSON.parse(message)).catch((e) => {
-        console.error('Failed to handle ms event command', e)
+        this.emitter.emit('error', e)
       })
     })
   }

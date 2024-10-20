@@ -2,33 +2,34 @@
 
 A mock manager for Node.js applications that combines [msw](https://mswjs.io/) interceptors with Redis-based persistence.
 
-Mocktory simplifies mock management for DEV/QA/AQA teams, enabling real-time scenario simulation and system testing. 
+Mocktory simplifies mock management for DEV/QA/AQA teams, enabling real-time scenario simulation and system testing.
 
 **While MSW lets you define mocks in code, Mocktory supports both code-based and real-time mock definitions.**
 
 ## Features
 
-- *Real-time requests retrospective:* track all outgoing HTTP requests from a Node.js application in history.
-- *Mocking:* manipulate responses in real-time, setting scenarios like failure, success, or passthrough.
-- *[WIP]*: ability to save responses to storage for later use.
-- *[WIP]*: group set of mocks into scenarios to simplify test preparation. 
-- *[WIP]*: providing a UI for managing mocks and history.
+- _Real-time requests retrospective:_ track all outgoing HTTP requests from a Node.js application in history.
+- _Mocking:_ manipulate responses in real-time, setting scenarios like failure, success, or passthrough.
+- _[WIP]_: ability to save responses to storage for later use.
+- _[WIP]_: group set of mocks into scenarios to simplify test preparation.
+- _[WIP]_: providing a UI for managing mocks and history.
 
 Temporary UI replaced by Swagger.
 👉 [See live example about Mocktory features](https://app.swaggerhub.com/apis/vlad.lazurenko/mocking-service_api/1.0.0)
 
 ## Roadmap
- 
+
 - [WIP] Offer default enhancers for feature IDs that have unique factors apart from the basic URL.
 
 #### v1 release
+
 - Transform Swagger to a nice UI.
 - Provide more granular control of history TTL and other system parameters.
 
 #### v1+ releases
+
 - Allow saving requests to custom storage (like S3).
 - Get rid of MSW and use smaller @mswjs/interceptors
-
 
 ## Installation
 
@@ -66,7 +67,6 @@ const ms = new MockService({
   ],
 })
 
-
 // It's possible to subscribe to various events.
 ms.events.on('mock:set', ({ id, body }) =>
   logger.debug(`Mock set: ${id} with body:`, body),
@@ -76,11 +76,11 @@ ms.events.on('mock:set', ({ id, body }) =>
 ms.events.on('mock:drop', () => {})
 ms.events.on('mock:drop-all', () => {})
 
-ms.events.on('request:intercepted', () => {});
-ms.events.on('request:match-custom-mock', () => {});
-ms.events.on('request:match-custom-passthrough', () => {});
-ms.events.on('request:match-default', () => {});
-ms.events.on('request:passthrough', () => {});
+ms.events.on('request:intercepted', () => {})
+ms.events.on('request:match-custom-mock', () => {})
+ms.events.on('request:match-custom-passthrough', () => {})
+ms.events.on('request:match-default', () => {})
+ms.events.on('request:passthrough', () => {})
 
 ms.events.on('error', (err) => logger.error(err))
 ```
@@ -91,30 +91,33 @@ You can optionally define default mocks in your application. They are very simil
 
 ```ts
 // github-api.mocking.ts
-import { http, HttpResponse } from 'mocktory';
+import { http, HttpResponse } from 'mocktory'
 
-const api = http.setup('https://api.github.com');
+const api = http.setup('https://api.github.com')
 
 // Note: `http.responseJSON` construction is prefferable here,
 // since we can then easily show to QA/AQA user default response mock for better guide them.
-api.get(`/repos/*`, http.responseJSON(null));
+api.get(`/repos/*`, http.responseJSON(null))
 
 // Note: `http.responseJSON` supports templating from request body via {{requestBody}}.
 // So you can still omit writing custom method
-api.post(`/orgs/${config.orgName}/repos`, http.responseJSON({ name: '{{requestBody.name}}' }));
+api.post(
+  `/orgs/${config.orgName}/repos`,
+  http.responseJSON({ name: '{{requestBody.name}}' }),
+)
 
 // Same generic type support as in MSW
 api.post<{}, {}, {}>(
-    `/repos/issues`,
-    // You can still write custom response method, for end user it will be shown as "Custom response"
-    async ({ request }) => {
-        const body = await request.getRequest().json();
+  `/repos/issues`,
+  // You can still write custom response method, for end user it will be shown as "Custom response"
+  async ({ request }) => {
+    const body = await request.getRequest().json()
 
-        // ...
+    // ...
 
-        return HttpResponse.json({});
-    }
-);
+    return HttpResponse.json({})
+  },
+)
 ```
 
 Realtime mocks can be set via the API:
@@ -130,5 +133,3 @@ curl -X 'POST' \
 ```
 
 For more examples and patterns, see Swagger docs at `/api/mock-service/docs`.
-
-

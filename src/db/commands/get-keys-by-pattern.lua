@@ -13,9 +13,8 @@ repeat
     cursor = result[1]
 
     for _, v in ipairs(result[2]) do
-        list[#list+1] = v
+        list[#list + 1] = v
     end
-
 until cursor == '0'
 
 return list

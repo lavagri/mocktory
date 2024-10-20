@@ -1,4 +1,5 @@
 {
+  "plugins": ["@prettier/plugin-lua"],
   "arrowParens": "always",
   "bracketSpacing": true,
   "semi": false,

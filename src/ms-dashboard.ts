@@ -241,7 +241,7 @@ export class MSDashboard implements IMSDashboard {
 
     const { mockTTL } = await this.repo.setMock(id, body)
 
-    this.MS.getEmitter().emit('mock:set', { id, body, mockTTL })
+    this.MS.logger.info('mock:set', { id, body, mockTTL })
 
     return { expiration: secToMinHuman(mockTTL), body }
   }
@@ -257,7 +257,7 @@ export class MSDashboard implements IMSDashboard {
 
     await this.redisInstance.del(composedKey)
 
-    this.MS.getEmitter().emit('mock:drop', { id, isBlackListed })
+    this.MS.logger.info('mock:drop', { id, isBlackListed })
 
     return true
   }

@@ -33,7 +33,6 @@ export class MSHttpHandler {
     private readonly MS: IMockService,
     private readonly mswServer: SetupServerApi = MS.getMSW(),
     private readonly redisInstance = MS.getRedisClient(),
-    private readonly emitter = MS.getEmitter(),
   ) {
     this.handle()
 
@@ -57,19 +56,19 @@ export class MSHttpHandler {
           )
 
           if (!isBlackListReq) {
-            this.emitter.emit('request:intercepted', {
+            this.MS.logger.info('request:intercepted', {
               requestId,
               msRequest,
             })
 
             this.msHttpWatcher
               .saveInHistory(msRequest)
-              .catch((e) => this.emitter.emit('error', e))
+              .catch((err) => this.MS.logger.error(err))
           }
 
           return await this.applyMockPattern(msRequest)
         } catch (err) {
-          this.emitter.emit('error', err)
+          this.MS.logger.error(err)
           return passthrough()
         }
       }),
@@ -96,7 +95,7 @@ export class MSHttpHandler {
             )
           }
         } catch (err) {
-          this.emitter.emit('error', err)
+          this.MS.logger.error(err)
         }
       },
     )
@@ -118,7 +117,7 @@ export class MSHttpHandler {
             await this.msHttpWatcher.saveResponse(msRequest, response.clone())
           }
         } catch (err) {
-          this.emitter.emit('error', err)
+          this.MS.logger.error(err)
         }
       },
     )
@@ -174,7 +173,7 @@ export class MSHttpHandler {
     }
 
     if (!isBlackListReq) {
-      this.emitter.emit('request:passthrough', {
+      this.MS.logger.info('request:passthrough', {
         id: featureId,
         msRequest,
       })
@@ -199,7 +198,7 @@ export class MSHttpHandler {
 
     if (mockingBehaviour.pattern === MSMockingPattern.PASSTHROUGH) {
       if (!isBlackListReq) {
-        this.emitter.emit('request:match-custom-passthrough', {
+        this.MS.logger.info('request:match-custom-passthrough', {
           id: featureId,
           msRequest,
         })
@@ -214,7 +213,7 @@ export class MSHttpHandler {
       const reqPathParams = msRequest.getPathParams()
 
       if (!isBlackListReq) {
-        this.emitter.emit('request:match-custom-mock', {
+        this.MS.logger.info('request:match-custom-mock', {
           id: featureId,
           msRequest,
         })
@@ -247,7 +246,7 @@ export class MSHttpHandler {
     const matchHandler = matchingHandlers[0]
 
     if (!isBlackListReq) {
-      this.emitter.emit('request:match-default', {
+      this.MS.logger.info('request:match-default', {
         id: featureId,
         msRequest,
       })

@@ -8,6 +8,7 @@ import { Emitter } from 'strict-event-emitter'
 import { FeatureIdManagerService } from '~/core/feature-id-manager.service'
 import { MSRedis } from '~/db/redis'
 import { MSHttpResponse } from '~/handlers/http/response'
+import { MSLogger } from '~/ms-logger'
 import { MSRepo } from '~/ms-repo'
 import { MSRequest } from '~/ms-request'
 
@@ -45,6 +46,11 @@ export type InitOptions = {
    * @example ['sqs.*amazonaws.com', 's3.*amazonaws.com']
    */
   reqBlacklist?: (string | RegExp)[]
+
+  /**
+   * If true, console logs will be used instead default event emitter
+   */
+  useConsoleLogger?: boolean
 }
 
 export interface IMSDashboard {
@@ -105,6 +111,7 @@ export type MSMockingList = {
 
 export interface IMockService {
   isEnabled: boolean
+  logger: MSLogger
 
   getRedisClient(): MSRedis
   getMSW(): SetupServerApi

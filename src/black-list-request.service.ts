@@ -6,14 +6,11 @@ export class MSBlackListRequestService {
 
   private activeList: (string | RegExp)[] = []
 
-  constructor(
-    private readonly MS: IMockService,
-    private readonly emitter = MS.getEmitter(),
-  ) {
+  constructor(private readonly MS: IMockService) {
     const optionsBlackList = this.MS.getInitOptions().reqBlacklist
 
     this.renewDefaultReqBlackList(optionsBlackList).catch((err) =>
-      this.emitter.emit('error', err),
+      this.MS.logger.error(err),
     )
   }
 

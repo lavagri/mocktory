@@ -3,6 +3,7 @@ import { setupServer, SetupServerApi } from 'msw/node'
 import { Emitter } from 'strict-event-emitter'
 
 import { FeatureIdManagerService } from '~/core/feature-id-manager.service'
+import { MSConsoleLogger, MSEventLogger, MSLogger } from '~/ms-logger'
 import { MSRepo } from '~/ms-repo'
 import {
   IMockService,
@@ -22,6 +23,8 @@ import { MSExpressServe } from './serve/express'
 import { loadMockingFiles } from './utils/load-files'
 
 export class MockService implements IMockService {
+  public logger!: MSLogger
+
   private readonly initializing: Promise<boolean>
 
   private redis!: MSRedis
@@ -51,6 +54,10 @@ export class MockService implements IMockService {
     this.redisSub = await createRedisClient(this.initOptions.redis)
 
     this.mswServer = setupServer()
+    this.logger = this.initOptions.useConsoleLogger
+      ? new MSConsoleLogger()
+      : new MSEventLogger(this.emitter)
+
     this.mockRepo = new MSRepo(this.redis)
 
     if (this.initOptions.filesPattern) {
@@ -67,15 +74,15 @@ export class MockService implements IMockService {
     this.subscribeOnMSEvents()
 
     this.emitter.on('mock:set', (payload) => {
-      this.sendMSEventCommand({ command: 'MOCK-SET', payload }).catch((e) => {
-        this.emitter.emit('error', e)
+      this.sendMSEventCommand({ command: 'MOCK-SET', payload }).catch((err) => {
+        this.logger.error(err)
       })
     })
 
     this.emitter.on('mock:drop', ({ id }) => {
       this.sendMSEventCommand({ command: 'MOCK-DROP', payload: { id } }).catch(
-        (e) => {
-          this.emitter.emit('error', e)
+        (err) => {
+          this.logger.error(err)
         },
       )
     })
@@ -184,8 +191,8 @@ export class MockService implements IMockService {
         return
       }
 
-      this.handleMSEventCommand(JSON.parse(message)).catch((e) => {
-        this.emitter.emit('error', e)
+      this.handleMSEventCommand(JSON.parse(message)).catch((err) => {
+        this.logger.error(err)
       })
     })
   }

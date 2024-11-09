@@ -139,27 +139,17 @@ export class MSHttpHandler {
     const customMockId = await this.MS.getFeatureIdManager().search(featureId)
 
     if (customMockId) {
-      const isRestrictedWithCounter = await this.redisInstance.get(
-        `ms:mocking-count:${customMockId}`,
-      )
+      const isCounterAllowedToRun = await this.handleMockCounter(customMockId)
 
-      if (!isRestrictedWithCounter) {
-        return this.handleCustomMock(customMockId, msRequest)
-      }
+      if (isCounterAllowedToRun) {
+        const mockingBehaviour =
+          await this.MS.getMockRepo().getMockById(customMockId)
 
-      const countMockDecr = await this.redisInstance.decr(
-        `ms:mocking-count:${customMockId}`,
-      )
+        if (mockingBehaviour) {
+          return this.handleCustomMock(mockingBehaviour, msRequest)
+        }
 
-      if (countMockDecr >= 0) {
-        return this.handleCustomMock(customMockId, msRequest)
-      } else {
-        await Promise.all(
-          [
-            `ms:mocking:${customMockId}`,
-            `ms:mocking-count:${customMockId}`,
-          ].map((k) => this.redisInstance.del(k)),
-        )
+        await this.MS.getDashboard().dropMock(customMockId)
       }
     }
 
@@ -182,15 +172,33 @@ export class MSHttpHandler {
     return passthrough()
   }
 
-  private async handleCustomMock(customMockId: string, msRequest: MSRequest) {
+  private async handleMockCounter(customMockId: string): Promise<boolean> {
+    const isRestrictedWithCounter = await this.redisInstance.get(
+      `ms:mocking-count:${customMockId}`,
+    )
+
+    if (!isRestrictedWithCounter) {
+      return true
+    }
+
+    const countMockDecr = await this.redisInstance.decr(
+      `ms:mocking-count:${customMockId}`,
+    )
+
+    if (countMockDecr >= 0) {
+      return true
+    }
+
+    await this.MS.getDashboard().dropMock(customMockId)
+    return false
+  }
+
+  private async handleCustomMock(
+    mockingBehaviour: MSMockingPayload,
+    msRequest: MSRequest,
+  ) {
     const featureId = msRequest.getFeatureId()
     const isBlackListReq = this.MS.isBlackListedFeature(featureId)
-
-    const mockRaw = await this.redisInstance.get(`ms:mocking:${customMockId}`)
-
-    const mockingBehaviour: MSMockingPayload = mockRaw
-      ? JSON.parse(mockRaw)
-      : null
 
     if (!mockingBehaviour) {
       return

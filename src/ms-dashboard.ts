@@ -42,6 +42,7 @@ export class MSDashboard implements IMSDashboard {
     const responseBodySizeLimitKB = options.sizeLimit || 100
 
     const recordsRaw = await this.redisInstance.getDetailedReqHistory(
+      this.redisInstance.getPrefix(),
       '0',
       'ms:watcher:*',
       'ms:response-short:',
@@ -117,6 +118,7 @@ export class MSDashboard implements IMSDashboard {
 
   async removeHistory(): Promise<void> {
     const watchKeys = await this.redisInstance.getKeysByPattern(
+      this.redisInstance.getPrefix(),
       '0',
       'ms:watcher:*',
     )
@@ -133,7 +135,11 @@ export class MSDashboard implements IMSDashboard {
 
     const composedKey = 'ms:mocking:*'
 
-    const keys = await this.redisInstance.getKeysByPattern('0', composedKey)
+    const keys = await this.redisInstance.getKeysByPattern(
+      this.redisInstance.getPrefix(),
+      '0',
+      composedKey,
+    )
     const mockingPatternsRaw = await Promise.all(
       keys.map((key: string) => this.redisInstance.get(key)),
     )
@@ -210,6 +216,7 @@ export class MSDashboard implements IMSDashboard {
     const composedKey = 'ms:mocking:' + id
 
     const mockingKeys = await this.redisInstance.getKeysByPattern(
+      this.redisInstance.getPrefix(),
       '0',
       composedKey,
     )
@@ -271,7 +278,11 @@ export class MSDashboard implements IMSDashboard {
 
     const composedKey = 'ms:mocking:*'
 
-    const mockKeys = await this.redisInstance.getKeysByPattern('0', composedKey)
+    const mockKeys = await this.redisInstance.getKeysByPattern(
+      this.redisInstance.getPrefix(),
+      '0',
+      composedKey,
+    )
 
     if (!mockKeys || !mockKeys.length) {
       return false
@@ -285,7 +296,11 @@ export class MSDashboard implements IMSDashboard {
     )
 
     // Drop all history and other keys
-    const keys = await this.redisInstance.getKeysByPattern('0', `ms:*`)
+    const keys = await this.redisInstance.getKeysByPattern(
+      this.redisInstance.getPrefix(),
+      '0',
+      `ms:*`,
+    )
     if (keys.length > 0) {
       await this.redisInstance.del(...keys)
     }

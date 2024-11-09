@@ -53,6 +53,7 @@ export class MSRepo implements IMSRepo {
    */
   async getAllMocksKeys(): Promise<string[]> {
     const keys = await this.client.getKeysByPattern(
+      this.client.getPrefix(),
       '0',
       `${this.keysPrefix.mock}*`,
     )

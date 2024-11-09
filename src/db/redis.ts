@@ -13,14 +13,22 @@ const readLuaScripts = async (fileNames: string[]) => {
 }
 
 export interface MSRedis extends Redis {
-  getKeysByPattern(cursor: string, pattern: string): Promise<string[]>
+  getPrefix(): string
+
+  getKeysByPattern(
+    keyPrefix: string,
+    cursor: string,
+    pattern: string,
+  ): Promise<string[]>
 
   getAllHashes<TData extends object>(
+    keyPrefix: string,
     cursor: string,
     pattern: string,
   ): Promise<Record<string, TData>[]>
 
   getDetailedReqHistory(
+    keyPrefix: string,
     cursor: string,
     hashPattern: string,
     reqPattern: string,
@@ -58,5 +66,12 @@ async function createCommands(redis: Redis) {
   redis.defineCommand('getKeysByPattern', {
     numberOfKeys: 0,
     lua: getKeysByPatternLua,
+  })
+
+  Object.defineProperty(redis, 'getPrefix', {
+    value: () => redis.options.keyPrefix || '',
+    writable: false,
+    enumerable: false,
+    configurable: false,
   })
 }

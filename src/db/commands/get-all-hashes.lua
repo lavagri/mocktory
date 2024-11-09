@@ -1,5 +1,6 @@
-local cursor = ARGV[1]
-local pattern = ARGV[2]
+local prefix = ARGV[1]
+local cursor = ARGV[2]
+local pattern = ARGV[3]
 
 local finalObject = {}
 
@@ -11,12 +12,13 @@ local finalObject = {}
 -- M is the number of keys that match the pattern and for which HGETALL is called.
 --
 repeat
-    local result = redis.call('SCAN', cursor, 'MATCH', pattern)
+    local result = redis.call('SCAN', cursor, 'MATCH', prefix .. pattern)
     cursor = result[1]
     local keys = result[2]
 
-    for _, key in ipairs(keys) do
-        local values = redis.call('HGETALL', key)
+    for _, prefixKey in ipairs(keys) do
+        local key = string.sub(prefixKey, string.len(prefix) + 1)
+        local values = redis.call('HGETALL', prefixKey)
         local keyValues = {}
 
         -- Convert values into key-value pairs

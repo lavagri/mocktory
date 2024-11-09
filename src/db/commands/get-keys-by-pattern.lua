@@ -1,5 +1,6 @@
-local cursor = ARGV[1]
-local pattern = ARGV[2]
+local prefix = ARGV[1]
+local cursor = ARGV[2]
+local pattern = ARGV[3]
 
 local list = {}
 
@@ -9,11 +10,12 @@ local list = {}
 -- Complexity: O(N)
 --
 repeat
-    local result = redis.call('SCAN', cursor, 'MATCH', pattern)
+    local result = redis.call('SCAN', cursor, 'MATCH', prefix .. pattern)
     cursor = result[1]
 
-    for _, v in ipairs(result[2]) do
-        list[#list + 1] = v
+    for _, prefixKey in ipairs(result[2]) do
+        local key = string.sub(prefixKey, string.len(prefix) + 1)
+        list[#list + 1] = key
     end
 until cursor == '0'
 
